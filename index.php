@@ -21,6 +21,7 @@ include "db.php";
         <div class="nav-links">
             <a href="#about">Главная</a>
             <a href="#contacts">Контакты</a>
+            <a href="#coursework">О курсовой</a>
             <a href="#feedback-form">Обратная связь</a>
             <a href="#" id="feedback-link">Заполнить форму</a>
         </div>
@@ -48,9 +49,16 @@ include "db.php";
             <li>Телефон приёмной: +7 (3532) 91-01-00</li>
             <li>Электронная почта: <a href="mailto:cit@mail.orb.ru">cit@mail.orb.ru</a></li>
             <li>Юридический адрес: 460000, г. Оренбург, ул. Кобозева, 30, помещение 3</li>
-            <li>Фактический адрес: 460000, г. Оренбург, пер. Телеграфный, 7</li>
+            <li>Фактический адрес: 460015, г. Оренбург, ул. 9 Января, 62</li>
             <li>Сайт: <a href="https://cit.orb.ru" target="_blank">cit.orb.ru</a></li>
         </ul>
+    </section>
+
+    <section id="coursework">
+    <h2>О курсовой</h2>
+    <p class="main-text">
+        Курсовую работу "Информационная система сбора данных" разработала Суюндукова С.А.
+    </p>
     </section>
 
     <section id="feedback-form">

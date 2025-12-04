@@ -2,12 +2,12 @@
 ymaps.ready(initMap);
 function initMap() {
     const myMap = new ymaps.Map("map", {
-        center: [51.761633, 55.096273],
-        zoom: 16
+        center: [51.767134, 55.095994],
+        zoom: 16 
     });
 
-    const myPlacemark = new ymaps.Placemark([51.761633, 55.096273], {
-        balloonContent: "Адрес: Телеграфный переулок, 7, Оренбург<br>Телефон: +7 (3532) 91-01-00"
+    const myPlacemark = new ymaps.Placemark([51.767134, 55.095994], {
+        balloonContent: "Адрес: 9 Января, 62, Оренбург<br>Телефон: +7 (3532) 91-01-00"
     });
 
     myMap.geoObjects.add(myPlacemark);
