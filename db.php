@@ -1,4 +1,7 @@
 <?php
+/** 
+ * Подключение к базе данных PostgreSQL
+ */
 $host = "localhost"; 
 $port = "5432";
 $dbname = "postgres"; 
@@ -12,4 +15,5 @@ if (!$conn) {
 }
 
 pg_query($conn, "SET search_path TO cit_schema");
+pg_set_client_encoding($conn, "UTF8");
 ?>
