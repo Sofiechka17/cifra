@@ -89,6 +89,43 @@ nav a:hover {
   background-color: #CC4400; 
 }
 
+/* Кружок с надписью "МО" вместо кнопки Войти */
+.user-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #FF5500;
+  color: #FFFEFE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  margin-left: 20px;
+}
+
+/* Центрированная навигация в шапке формы */
+.centered-nav {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* ссылки по центру */
+}
+
+/* Чтобы блок ссылок был по центру, а МО ушло вправо */
+.centered-nav .nav-links {
+  margin: 0 auto;
+}
+
+/* Название МО в правом верхнем углу */
+.user-municipality {
+  margin-left: auto;
+  font-size: 16px;
+  font-weight: 600;
+  color: #FFFEFE;
+  white-space: nowrap;
+}
+
 /* Основной контент */
 main { 
   padding: 50px; 

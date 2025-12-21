@@ -52,10 +52,13 @@ $rows      = $structure['rows'] ?? [];
         </div>
         <span class="system-name">Информационная система сбора данных</span>
     </div>
-    <nav>
+    <nav class="centered-nav">
         <div class="nav-links">
             <a href="index.php">Главная</a>
             <a href="get_table.php">Заполнить форму</a>
+        </div>
+        <div class="user-municipality">
+            <?= htmlspecialchars($municipalityName) ?>
         </div>
     </nav>
 </header>

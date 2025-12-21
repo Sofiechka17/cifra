@@ -35,7 +35,14 @@ include "db.php";
             <a href="#feedback-form">Обратная связь</a>
             <a href="get_table.php">Заполнить форму</a>
         </div>
-        <button class="login-btn" id="loginBtn">Войти</button>
+
+        <?php if (!empty($_SESSION['user_id'])): ?>
+            <!-- Кружок вместо кнопки Войти -->
+            <div class="user-circle">МО</div>
+        <?php else: ?>
+            <!-- Кнопка Войти для неавторизованных -->
+            <button class="login-btn" id="loginBtn">Войти</button>
+        <?php endif; ?>
     </nav>
 </header>
 <main>

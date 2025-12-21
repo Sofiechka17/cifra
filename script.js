@@ -40,22 +40,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const feedbackLink = document.getElementById("feedback-link");
 
-    /**
-    * Открывает модальное окно с выбранной формой
-    */
-    const openModal = (form) => {
-        modal.style.display = "flex";
-        signUpForm.style.display = form === "register" ? "block" : "none";
-        signInForm.style.display = form === "login" ? "block" : "none";
-    };
+    // Если модалка вообще есть на странице
+    if (modal && signUpForm && signInForm) {
 
-    // Открытие/закрытие модалки
-    loginBtn.addEventListener("click", () => openModal("register"));
-    closeModal.addEventListener("click", () => modal.style.display = "none");
-    window.addEventListener("click", e => { if (e.target === modal) modal.style.display = "none"; });
+        const openModal = (form) => {
+            modal.style.display = "flex";
+            signUpForm.style.display = form === "register" ? "block" : "none";
+            signInForm.style.display = form === "login" ? "block" : "none";
+        };
 
-    showLogin.addEventListener("click", e => { e.preventDefault(); openModal("login"); });
-    showRegister.addEventListener("click", e => { e.preventDefault(); openModal("register"); });
+        if (loginBtn) {
+            loginBtn.addEventListener("click", () => openModal("register"));
+        }
+        if (closeModal) {
+            closeModal.addEventListener("click", () => modal.style.display = "none");
+        }
+        window.addEventListener("click", e => { if (e.target === modal) modal.style.display = "none"; });
+
+        if (showLogin) {
+            showLogin.addEventListener("click", e => { e.preventDefault(); openModal("login"); });
+        }
+        if (showRegister) {
+            showRegister.addEventListener("click", e => { e.preventDefault(); openModal("register"); });
+        }
 
     // AJAX регистрация
     const regForm = signUpForm.querySelector("form");
@@ -72,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Ошибка сети: " + err);
         }
     });
+}
 
     // AJAX авторизация 
     const loginForm = signInForm.querySelector("form");
