@@ -1,4 +1,8 @@
 <?php
+/**
+ * Обработчик авторизации пользователя.
+ * Принимает POST (username, password), проверяет в БД и возвращает JSON-ответ.
+ */
 session_start();
 include "db.php";
 
@@ -23,6 +27,7 @@ $query = "SELECT user_id, user_full_name, user_password, is_admin
 $result = pg_query_params($conn, $query, [$login]);
 
 if ($row = pg_fetch_assoc($result)) {
+    // Проверка пароля по хэшу
     if (password_verify($password, $row["user_password"])) {
         $_SESSION["user_id"] = $row["user_id"];
         $_SESSION["user_full_name"] = $row["user_full_name"];

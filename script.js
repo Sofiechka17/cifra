@@ -1,5 +1,18 @@
+/**
+ * Скрипт для главной страницы:
+ *  - инициализация карты Яндекс;
+ *  - логика модального окна регистрации/авторизации;
+ *  - AJAX-регистрация и авторизация;
+ *  - валидация ФИО и телефона;
+ *  - отправка формы обратной связи;
+ *  - динамическое построение таблицы и сохранение данных.
+ */
+
 // Инициализация карты 
 ymaps.ready(initMap);
+/**
+ * Создаёт карту на элементе #map и добавляет метку учреждения.
+ */
 function initMap() {
     const myMap = new ymaps.Map("map", {
         center: [51.767134, 55.095994],
@@ -27,13 +40,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const feedbackLink = document.getElementById("feedback-link");
 
-    // Функции открытия/закрытия модалки 
+    /**
+    * Открывает модальное окно с выбранной формой
+    */
     const openModal = (form) => {
         modal.style.display = "flex";
         signUpForm.style.display = form === "register" ? "block" : "none";
         signInForm.style.display = form === "login" ? "block" : "none";
     };
 
+    // Открытие/закрытие модалки
     loginBtn.addEventListener("click", () => openModal("register"));
     closeModal.addEventListener("click", () => modal.style.display = "none");
     window.addEventListener("click", e => { if (e.target === modal) modal.style.display = "none"; });
@@ -113,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
 
-    // Отправка заявки 
+    // Отправка заявки и обратной связи
     const feedbackForm = document.getElementById("feedbackForm");
     if (feedbackForm) {
         feedbackForm.addEventListener("submit", async e => {
@@ -160,7 +176,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Функции рендера и сохранения таблицы 
+    /**
+     * Рисуем таблицу показателей на странице на основе полученных данных
+     */
     function renderTable(data) {
         const container = document.createElement("div");
         container.id = "data-table-container";
@@ -207,6 +225,9 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("saveTableBtn").addEventListener("click", async () => saveTable(container, data));
     }
 
+    /**
+     * Собирает значения из таблицы и отправляет их на сервер в save_table.php
+     */
     async function saveTable(container, data) {
         const inputs = container.querySelectorAll("input");
         const tableData = [];

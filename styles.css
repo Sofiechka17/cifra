@@ -1,3 +1,4 @@
+/* Общие стили страницы и шапки */
 body {
   margin: 0;
   font-family: Helvetica, sans-serif;
@@ -8,45 +9,58 @@ body {
 header {
   width: 100%;
   background-color: #000000;
-  display: flex;
+  display: flex; /* размещаем содержимое шапки в линию */
   align-items: center;
   justify-content: space-between;
   padding: 20px 70px;
-  box-sizing: border-box;
+  box-sizing: border-box;/* отступы учитываются внутри ширины */
 }
 
-.logo { 
-  width: 150px; 
-  height: 40px; 
+/* Блок с логотипом и названием системы */
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* расстояние между логотипом и текстом */
 }
 
-.logo-container { 
-  display: flex; 
-  align-items: center; 
-  margin-right: auto; 
-  margin-left: -70px; 
+.logo {
+  width: 150px;        
+  height: 40px;
+  display: flex;
+  align-items: center; /* центрируем картинку по вертикали */
+  justify-content: center; /* по горизонтали */
 }
 
-.system-name { 
-  font-size: 16px; 
-  font-weight: 700; 
-  color: #FFFEFE; 
-  white-space: nowrap; 
-  margin-left: -500px; 
+.logo img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain; /* логотип полностью помещается, не обрезается */
 }
 
+/* Название системы рядом с логотипом */
+.system-name {
+  font-size: 16px;
+  font-weight: 700; /* жирность текста */ 
+  color: #FFFEFE;
+  white-space: nowrap; /* не переносить текст на новую строку */
+  margin: 0; /* отступ */         
+}
+
+/* Навигация */
 nav { 
   display: flex; 
   align-items: center; 
   gap: 40px; 
 }
 
+/* Контейнер ссылок в навигации*/
 .nav-links { 
   display: flex; 
   gap: 40px; 
   margin: 0 auto; 
 }
 
+/* Ссылки в меню навигации */
 nav a { 
   font-size: 16px; 
   font-weight: 400; 
@@ -55,9 +69,10 @@ nav a {
 }
 
 nav a:hover { 
-  text-decoration: underline; 
+  text-decoration: underline; /* подчеркиваем ссылку при наведении */
 }
 
+/* Кнопка входа */
 .login-btn {
   background-color: #FF5500;
   color: #FFFEFE;
@@ -65,15 +80,16 @@ nav a:hover {
   font-weight: bold;
   border: none;
   border-radius: 6px;
-  padding: 10px 20px;
+  padding: 10px 20px; /* внутренние отступы, размер кнопки */
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background 0.3s ease; /* плавное изменение цвета фона */
 }
 
 .login-btn:hover { 
   background-color: #CC4400; 
 }
 
+/* Основной контент */
 main { 
   padding: 50px; 
 }
@@ -92,18 +108,21 @@ section h2 {
   line-height: 1.6; 
 }
 
+/* Общие отступы для текста, списков и форм внутри секций */
 section p, 
 section ul, 
 section form { 
   margin-top: 20px; 
 }
 
+/* Формы */
 form { 
-  display: flex; 
+  display: flex; /* размещаем элементы формы вертикально */
   flex-direction: column; 
   max-width: 500px; 
 }
 
+/* Подписи к полям форм */
 form label { 
   margin-top: 10px; 
 }
@@ -120,6 +139,7 @@ form select {
   font-size: 14px;
 }
 
+/* Кнопка отправки формы */
 form button {
   margin-top: 15px;
   padding: 10px;
@@ -135,6 +155,7 @@ form button:hover {
   background-color: #CC4400; 
 }
 
+/* Ссылка в блоке Контакты */
 #contacts a { 
   color: #CC4400; 
   text-decoration: none; 
@@ -144,25 +165,27 @@ form button:hover {
   text-decoration: underline; 
 }
 
-/* Модалка */
+/* Модальные окна */
 .modal {
   display: none;
   position: fixed;
-  z-index: 1000;
+  z-index: 1000; /* чтобы модалка была поверх всего */
   left: 0; top: 0;
   width: 100%; height: 100%;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.7); /* полупрозрачный черный фон */
   justify-content: center;
   align-items: center;
 }
+/* Контейнер для регистрации / авториз */
 .modal-content {
   background: #000;
   padding: 20px;
   border-radius: 20px;
-  box-shadow: 0 0 20px #0ef;
+  box-shadow: 0 0 20px #0ef; /* подсветка */
   width: 420px;
   position: relative;
 }
+/*Закрытие модального окна */
 .close {
   position: absolute;
   top: 10px; right: 15px;
@@ -170,27 +193,28 @@ form button:hover {
   color: #fff;
   cursor: pointer;
 }
-
-/* Фиксированный textarea */
+/* Текстовое поле для ввода проблемы в обратной связи*/
 #problem-description {
-  resize: none;
+  resize: none; /* запрет изменения размера пользователем */
   width: 100%;
   height: 150px;
 }
 
-/* Стили для таблицы */
+/* Контейнер для таблицы с показателями */
 #data-table-container {
     width: 100%;
     overflow-x: auto;
     margin: 20px 0;
 }
 
+/* Таблица с показателями(данные для прогноза) */
 #data-table {
     border-collapse: collapse;
     width: max-content; 
     min-width: 100%;
 }
 
+/* Ячейки таблицы: заголовки и данные */
 #data-table th, #data-table td {
     border: 1px solid #ddd;
     padding: 10px;
@@ -211,15 +235,18 @@ form button:hover {
     color: white;
 }
 
+/* Нередактируемые ячейки таблицы */
 #data-table input:read-only {
     background-color: #444;
     color: #ccc;
 }
 
+/*Числовые поля таблицы*/
 #data-table input[type="number"] {
     text-align: right;
 }
 
+/*Кнопка Сохранить под таблицей*/
 #saveTableBtn {
     margin-top: 15px;
     padding: 10px 20px;

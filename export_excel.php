@@ -1,4 +1,7 @@
 <?php
+/**
+ * Выгрузка одной заполненной таблицы пользователя в Excel
+ */
 session_start();
 require 'vendor/autoload.php';
 include "db.php";

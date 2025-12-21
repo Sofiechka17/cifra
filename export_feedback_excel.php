@@ -1,4 +1,7 @@
 <?php
+/**
+ * Выгрузка всех заявок обратной связи в Excel 
+ */
 session_start();
 require 'vendor/autoload.php';
 include "db.php";
@@ -10,6 +13,7 @@ if (empty($_SESSION["is_admin"])) {
     die("Доступ запрещён");
 }
 
+// Получаем все заявки обратной связи
 $query = "
     SELECT fr.feedback_id, 
            fr.full_name_feedback, 

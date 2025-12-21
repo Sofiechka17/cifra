@@ -1,4 +1,7 @@
 <?php
+/**
+ * Возвращает список МО для выпадающего списка 
+ */
 $conn = pg_connect("host=localhost port=5432 dbname=postgres user=postgres password=postgres");
 if (!$conn) { die("Ошибка подключения к базе данных."); }
 

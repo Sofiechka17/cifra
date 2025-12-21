@@ -1,4 +1,12 @@
 <?php
+/**
+ * Главная страница системы:
+ *  - информация об учреждении;
+ *  - контакты;
+ *  - информация о курсовой;
+ *  - форма обратной связи;
+ *  - модальное окно регистрации и авторизации пользователя.
+ */
 session_start();
 include "db.php";
 ?>
@@ -13,10 +21,12 @@ include "db.php";
 </head>
 <body>
 <header>
-    <div class="logo">
-        <img src="default-logo_w152_fitted.webp" alt="Логотип" style="width:30%; height:100%; object-fit:contain;">
+    <div class="brand">
+        <div class="logo">
+            <img src="default-logo_w152_fitted.webp" alt="Логотип" style="width:30%; height:100%; object-fit:contain;">
+        </div>
+        <span class="system-name">Информационная система сбора данных</span>
     </div>
-    <span class="system-name">Информационная система сбора данных</span>
     <nav>
         <div class="nav-links">
             <a href="#about">Главная</a>
@@ -85,6 +95,7 @@ include "db.php";
   </div>
 </div>
 
+<!-- Модальное окно регистрации/авторизации -->
 <div class="modal" id="authModal">
     <div class="modal-content">
         <span class="close" id="closeModal">&times;</span>

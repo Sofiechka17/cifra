@@ -1,4 +1,11 @@
 <?php
+/**
+ * Страница администратора
+ * Отображает:
+ *  - список заполненных пользователями таблиц с возможностью выгрузки в Excel
+ *  - список заявок обратной связи с возможностью выгрузки в Excel
+ */
+
 session_start();
 include "db.php";
 
@@ -6,7 +13,9 @@ if (empty($_SESSION["is_admin"])) {
     die("Доступ запрещён");
 }
 
-// --- Заполненные таблицы ---
+/**
+ * Получение списка всех заполненных таблиц 
+ */
 $filledResult = pg_query($conn, "
     SELECT f.filled_data_id, u.user_full_name, m.municipality_name, f.filled_date 
     FROM cit_schema.filled_data f
@@ -15,7 +24,9 @@ $filledResult = pg_query($conn, "
     ORDER BY f.filled_date DESC
 ");
 
-// --- Обратная связь ---
+/**
+ * Получение всех заявок обратной связи
+ */
 $feedbackResult = pg_query($conn, "
     SELECT fr.feedback_id, 
            fr.full_name_feedback, 

@@ -4,9 +4,7 @@
  */
 
 /**
- * Гарантирует, что сессия запущена.
- *
- * @return void
+ * Гарантирует, что сессия запущена
  */
 function ensure_session_started(): void
 {
@@ -17,9 +15,7 @@ function ensure_session_started(): void
 
 /**
  * Проверяет, что пользователь авторизован
- * При отсутствии авторизации перенаправляет на login.php.
- *
- * @return void
+ * При отсутствии авторизации перенаправляет на login.php
  */
 function require_auth(): void
 {
@@ -32,9 +28,7 @@ function require_auth(): void
 
 /**
  * Проверяет, что текущий пользователь — администратор
- * При отсутствии прав завершает выполнение.
- *
- * @return void
+ * При отсутствии прав завершает выполнение
  */
 function require_admin(): void
 {
@@ -47,8 +41,6 @@ function require_admin(): void
 
 /**
  * Возвращает ID текущего пользователя или null
- *
- * @return int|null
  */
 function current_user_id(): ?int
 {
@@ -58,8 +50,6 @@ function current_user_id(): ?int
 
 /**
  * Возвращает имя пользователя (ФИО) или null
- *
- * @return string|null
  */
 function current_user_name(): ?string
 {
@@ -69,8 +59,6 @@ function current_user_name(): ?string
 
 /**
  * Возвращает название муниципального образования из сессии или null
- *
- * @return string|null
  */
 function current_municipality_name(): ?string
 {
@@ -80,8 +68,6 @@ function current_municipality_name(): ?string
 
 /**
  * Возвращает флаг, является ли пользователь администратором
- *
- * @return bool
  */
 function is_admin(): bool
 {
