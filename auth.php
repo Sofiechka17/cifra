@@ -15,13 +15,30 @@ function ensure_session_started(): void
 
 /**
  * Проверяет, что пользователь авторизован
- * При отсутствии авторизации перенаправляет на login.php
  */
 function require_auth(): void
 {
     ensure_session_started();
     if (empty($_SESSION['user_id'])) {
-        header("Location: login.php");
+        ?>
+        <!DOCTYPE html>
+        <html lang="ru">
+        <head>
+            <meta charset="UTF-8">
+            <title>Требуется авторизация</title>
+        </head>
+        <body style="background:#201D1D; color:#fff; font-family:Helvetica, sans-serif;">
+        <script>
+            alert("Чтобы заполнить форму, необходимо авторизоваться.");
+            window.location.href = "index.php";
+        </script>
+        <noscript>
+            Чтобы заполнить форму, необходимо авторизоваться.
+            <br><a href="index.php">Перейти на главную</a>
+        </noscript>
+        </body>
+        </html>
+        <?php
         exit;
     }
 }

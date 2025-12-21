@@ -1,75 +1,131 @@
 <?php
 /**
- * Возвращает JSON с шаблоном таблицы для текущего пользователя
- * Пока что используется статический шаблон
+ * Страница заполнения активной отчётной таблицы.
+ *
+ * Это НОВАЯ версия get_table.php.
+ * Теперь файл не отдаёт JSON, а сразу выводит HTML-форму с таблицей:
+ *  - проверяем, что пользователь авторизован;
+ *  - получаем активный шаблон через TemplateService (паттерн Фасад);
+ *  - строим таблицу по заголовкам и структуре шаблона;
+ *  - отправляем заполненные данные в save_table.php.
  */
-session_start();
-include "db.php";
 
-header('Content-Type: application/json');
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/auth.php';
 
-// Проверка авторизации
-if (!isset($_SESSION["user_id"])) {
-    echo json_encode(["error" => "Необходима авторизация"]);
-    exit;
-}
+// Если пользователь не залогинен, отправим на login.php
+require_auth();
 
-$userId = $_SESSION["user_id"];
+// Подключаем сервис шаблонов (Фасад)
+require_once __DIR__ . '/core/TemplateService.php';
 
-/**
- * Получаем муниципальное образование пользователя
- */
-$query = "
-    SELECT u.municipality_id, m.municipality_name
-    FROM users u
-    JOIN municipalities m ON u.municipality_id = m.municipality_id
-    WHERE u.user_id = $1
-    LIMIT 1
-";
-$result = pg_query_params($conn, $query, [$userId]);
-$row = pg_fetch_assoc($result);
+// Создаём сервис и получаем активный шаблон из БД
+$service  = new TemplateService($conn);
+$template = $service->getActiveTemplate();
 
-if (!$row) {
-    echo json_encode(["error" => "Данные не найдены"]);
-    exit;
-}
+// Можно ли этот шаблон использовать для заполнения
+// Если состояние шаблона не активен, то выводим сообщение, что его ещё не создали/не активировали
+$noTemplate = !$template->canBeUsedForFill();
 
-// Шапка таблицы
-$headers = [
-    ["name" => "Показатели", "type" => "text", "readonly" => true],
-    ["name" => "Единица измерения", "type" => "text", "readonly" => true],
-    ["name" => "2022", "type" => "number", "readonly" => false],
-    ["name" => "2023", "type" => "number", "readonly" => false],
-    ["name" => "2024", "type" => "number", "readonly" => false],
-    ["name" => "2025", "type" => "number", "readonly" => false],
-    ["name" => "2026_консервативный", "type" => "number", "readonly" => false],
-    ["name" => "2026_базовый", "type" => "number", "readonly" => false],
-    ["name" => "2027_консервативный", "type" => "number", "readonly" => false],
-    ["name" => "2027_базовый", "type" => "number", "readonly" => false],
-    ["name" => "2028_консервативный", "type" => "number", "readonly" => false],
-    ["name" => "2028_базовый", "type" => "number", "readonly" => false]
-];
+// Название МО берём из сессии
+$municipalityName = current_municipality_name() ?? 'Муниципальное образование';
 
-// Строки показателей
-$rows = [
-    ["Показатели"=>"Численность населения (в среднегодовом исчислении)","Единица измерения"=>"тыс. чел."],
-    ["Показатели"=>"Численность населения старше трудоспособного возраста (на 1 января года)","Единица измерения"=>"тыс. чел."],
-    ["Показатели"=>"Общий коэффициент рождаемости","Единица измерения"=>"на 1000 чел."],
-    ["Показатели"=>"Общий коэффициент смертности","Единица измерения"=>"на 1000 чел."],
-    ["Показатели"=>"Коэффициент естественного прироста населения","Единица измерения"=>"на 1000 чел."],
-    ["Показатели"=>"Миграционный прирост (убыль)","Единица измерения"=>"тыс. чел."]
-];
+// Заголовки колонок и структура строк берем из объекта шаблона
+$headers   = $template->getHeaders();
+$structure = $template->getStructure();
+$rows      = $structure['rows'] ?? [];
+?>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Заполнение таблицы — ИССД</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+<header>
+    <div class="brand">
+        <div class="logo">
+            <img src="default-logo_w152_fitted.webp" alt="Логотип"
+                 style="width:30%; height:100%; object-fit:contain;">
+        </div>
+        <span class="system-name">Информационная система сбора данных</span>
+    </div>
+    <nav>
+        <div class="nav-links">
+            <a href="index.php">Главная</a>
+            <a href="get_table.php">Заполнить форму</a>
+        </div>
+    </nav>
+</header>
 
-// Пустые значения для всех годов
-foreach ($rows as &$r) {
-    for ($i = 2; $i < count($headers); $i++) {
-        $r[$headers[$i]["name"]] = "";
-    }
-}
+<main>
+    <section>
+        <h2>Заполнение формы</h2>
 
-echo json_encode([
-    "municipality_name" => $row["municipality_name"],
-    "template_id" => 1, 
-    "headers" => $headers,
-    "rows" => $rows
-], JSON_UNESCAPED_UNICODE);
+        <?php if ($noTemplate): ?>
+            <!-- Сообщение, если админ ещё не создал или не активировал шаблон -->
+            <div class="message message-error">
+                Активный шаблон таблицы ещё не создан администратором.
+            </div>
+        <?php else: ?>
+            <!-- Информация о МО и названии активного шаблона -->
+            <p class="main-text">
+                Муниципальное образование:
+                <strong><?= htmlspecialchars($municipalityName) ?></strong><br>
+                Шаблон: <strong><?= htmlspecialchars($template->getName()) ?></strong>
+            </p>
+
+            <!-- Форма отправки заполненной таблицы-->
+            <form id="data-form" method="post" action="save_table.php">
+                <!-- Передаём ID активного шаблона скрытым полем -->
+                <input type="hidden" name="template_id" value="<?= (int)$template->getId() ?>">
+
+                <table id="data-table">
+                    <thead>
+                    <tr>
+                        <?php foreach ($headers as $h): ?>
+                            <!-- Заголовки столбцов берем из JSON template_headers -->
+                            <th><?= htmlspecialchars($h['name']) ?></th>
+                        <?php endforeach; ?>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($rows as $rIndex => $row): ?>
+                        <tr>
+                            <?php foreach ($headers as $hIndex => $h): ?>
+                                <?php
+                                // Имя столбца, тип и флаг "только для чтения"
+                                $name      = $h['name'];
+                                $type      = $h['type'] ?? 'text';
+                                $readonly  = !empty($h['readonly']);
+
+                                // Значение ячейки из структуры (если есть)
+                                $value     = $row[$name] ?? '';
+
+                                // Имя поля в POST: cell[0]["2022"], cell[1]["2023"] и т.п.
+                                $inputName = "cell[$rIndex][" . htmlspecialchars($name, ENT_QUOTES) . "]";
+                                ?>
+                                <td>
+                                    <input
+                                        class="table-input"
+                                        <?= $readonly ? 'readonly' : '' ?>
+                                        type="<?= $type === 'number' ? 'number' : 'text' ?>"
+                                        name="<?= $inputName ?>"
+                                        value="<?= htmlspecialchars($value) ?>"
+                                    >
+                                </td>
+                            <?php endforeach; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+
+                <button type="submit">Сохранить и отправить</button>
+            </form>
+        <?php endif; ?>
+    </section>
+</main>
+</body>
+</html>

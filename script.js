@@ -151,112 +151,54 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+    
+    // Валидация таблицы перед отправкой (заполнение показателей) 
+    const dataForm = document.getElementById("data-form");
+    if (dataForm) {
+        dataForm.addEventListener("submit", (e) => {
+            let hasErrors = false;
 
-    // Кнопка Заполнить форму
-    feedbackLink.addEventListener("click", async e => {
-        e.preventDefault();
+            const inputs = dataForm.querySelectorAll("#data-table input");
 
-        try {
-            const authCheck = await fetch("get_table.php");
-            const data = await authCheck.json();
+            // Сначала убираем старую подсветку
+            inputs.forEach(input => input.classList.remove("input-error"));
 
-            if (data.error) {
-                alert("Необходима авторизация");
-                return;
-            }
+            inputs.forEach(input => {
+                const nameAttr = input.getAttribute("name") || "";
 
-            if (document.getElementById("data-table-container")) {
-                alert("Таблица уже отображается на странице.");
-                return;
-            }
+                // Имя вида: cell[0][2022], cell[0][Показатели], cell[0][Комментарий]
+                const isComment = nameAttr.includes("[Комментарий]");
+                const isTextCol =
+                    nameAttr.includes("[Показатели]") ||
+                    nameAttr.includes("[Единица измерения]");
 
-            renderTable(data);
-        } catch (err) {
-            alert("Ошибка загрузки таблицы: " + err);
-        }
-    });
+                // Текстовые и комментарий не проверяем
+                if (isComment || isTextCol) {
+                    return;
+                }
 
-    /**
-     * Рисуем таблицу показателей на странице на основе полученных данных
-     */
-    function renderTable(data) {
-        const container = document.createElement("div");
-        container.id = "data-table-container";
-        container.style.overflowX = "auto";
-        container.style.width = "100%";
+                const value = input.value.trim();
 
-        let html = `<h3 style="margin-bottom:10px;">Основные показатели, представляемые для разработки прогноза социального развития на период 2026-2028 г.</h3>`;
-        html += `<p style="margin-bottom:20px;">Муниципальное образование: ${data.municipality_name}</p>`;
+                // Пустое числовое поле — ошибка
+                if (value === "") {
+                    input.classList.add("input-error");
+                    hasErrors = true;
+                    return;
+                }
 
-        html += `<table id="data-table"><thead>`;
-        html += `<tr>
-                   <th rowspan="2" style="min-width:500px;">Показатели</th>
-                   <th rowspan="2">Единица измерения</th>
-                   <th colspan="3">Отчет</th>
-                   <th>Оценка показателей</th>
-                   <th colspan="6">Прогноз</th>
-                 </tr>`;
-        html += `<tr>
-                   <th>2022</th><th>2023</th><th>2024</th><th>2025</th>
-                   <th>2026_консервативный</th><th>2026_базовый</th>
-                   <th>2027_консервативный</th><th>2027_базовый</th>
-                   <th>2028_консервативный</th><th>2028_базовый</th>
-                 </tr>`;
-        html += `</thead><tbody>`;
-
-        data.rows.forEach(row => {
-            html += `<tr>`;
-            data.headers.forEach(h => {
-                const value = row[h.name] || "";
-                const readonly = h.readonly ? "readonly" : "";
-                const type = h.type === "number" ? "number" : "text";
-                const style = h.name === "Показатели" ? "min-width:500px;" : "";
-                html += `<td><input type="${type}" value="${value}" ${readonly} style="width:100%; ${style}"></td>`;
+                // Заменяем запятую на точку и проверяем, число ли это
+                const normalized = value.replace(",", ".");
+                if (isNaN(normalized)) {
+                    input.classList.add("input-error");
+                    hasErrors = true;
+                    return;
+                }
             });
-            html += `</tr>`;
+
+            if (hasErrors) {
+                e.preventDefault(); // ошибка, не отправляем форму
+                alert("Не все числовые поля заполнены или заполнены корректно.\nЗаполните все обязательные ячейки и повторите отправку.");
+            }
         });
-
-        html += `</tbody></table>`;
-        html += `<button id="saveTableBtn">Сохранить</button>`;
-
-        container.innerHTML = html;
-        document.querySelector("main").appendChild(container);
-
-        document.getElementById("saveTableBtn").addEventListener("click", async () => saveTable(container, data));
-    }
-
-    /**
-     * Собирает значения из таблицы и отправляет их на сервер в save_table.php
-     */
-    async function saveTable(container, data) {
-        const inputs = container.querySelectorAll("input");
-        const tableData = [];
-
-        for (let i = 0; i < data.rows.length; i++) {
-            const rowObj = {};
-            data.headers.forEach((h, j) => {
-                rowObj[h.name] = inputs[i * data.headers.length + j].value;
-            });
-            tableData.push(rowObj);
-        }
-
-        const formData = new FormData();
-        formData.append("template_id", data.template_id);
-        formData.append("municipality_name", data.municipality_name);
-        formData.append("table_data", JSON.stringify(tableData));
-
-        try {
-            const checkRes = await fetch("save_table.php", { method: "HEAD" });
-            if (!checkRes.ok) {
-                alert("Файл save_table.php не найден на сервере. Проверьте путь.");
-                return;
-            }
-
-            const saveRes = await fetch("save_table.php", { method: "POST", body: formData });
-            const saveData = await saveRes.text();
-            alert(saveData);
-        } catch (err) {
-            alert("Ошибка при отправке данных: " + err);
-        }
-    }
+    }        
 });

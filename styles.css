@@ -246,6 +246,12 @@ form button:hover {
     text-align: right;
 }
 
+/* Подсветка незаполненных числовых ячеек */
+#data-table input.input-error {
+    border: 1px solid #ff4d4f;
+    box-shadow: 0 0 6px rgba(255, 77, 79, 0.7); /* лёгкое свечение */
+}
+
 /*Кнопка Сохранить под таблицей*/
 #saveTableBtn {
     margin-top: 15px;

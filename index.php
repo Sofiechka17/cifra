@@ -33,12 +33,11 @@ include "db.php";
             <a href="#contacts">Контакты</a>
             <a href="#coursework">О курсовой</a>
             <a href="#feedback-form">Обратная связь</a>
-            <a href="#" id="feedback-link">Заполнить форму</a>
+            <a href="get_table.php">Заполнить форму</a>
         </div>
         <button class="login-btn" id="loginBtn">Войти</button>
     </nav>
 </header>
-
 <main>
     <section id="about">
         <h2>Об учреждении</h2>
