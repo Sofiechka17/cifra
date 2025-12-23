@@ -38,7 +38,7 @@ include "db.php";
 
         <?php if (!empty($_SESSION['user_id'])): ?>
             <!-- Кружок вместо кнопки Войти -->
-            <div class="user-circle">МО</div>
+            <div class="user-circle" id="userCircle" title="Личный кабинет">МО</div>
         <?php else: ?>
             <!-- Кнопка Войти для неавторизованных -->
             <button class="login-btn" id="loginBtn">Войти</button>
@@ -168,5 +168,19 @@ include "db.php";
     </div>
 </div>
 
+<!-- JS для обработки клика по кружку МО -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const userCircle = document.getElementById('userCircle');
+    if (userCircle) {
+        userCircle.addEventListener('click', function () {
+            const wantsLogout = confirm('Вы хотите выйти из личного кабинета?');
+            if (wantsLogout) {
+                window.location.href = 'logout.php';
+            }
+        });
+    }
+});
+</script>
 </body>
 </html>

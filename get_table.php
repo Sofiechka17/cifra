@@ -33,7 +33,49 @@ $municipalityName = current_municipality_name() ?? 'Муниципальное �
 // Заголовки колонок и структура строк берем из объекта шаблона
 $headers   = $template->getHeaders();
 $structure = $template->getStructure();
-$rows      = $structure['rows'] ?? [];
+$rowDefs      = $structure['rows'] ?? [];
+$columnsCount = count($headers);
+/**
+ * объединения для HTML
+ */
+$mergeTopLeft = [];
+$skipCells    = [];
+
+if (is_array($merges)) {
+    foreach ($merges as $merge) {
+        if (!is_array($merge)) {
+            continue;
+        }
+
+        $sr = isset($merge['startRow']) ? (int)$merge['startRow'] : 0;
+        $sc = isset($merge['startCol']) ? (int)$merge['startCol'] : 0;
+        $rs = isset($merge['rowSpan'])  ? (int)$merge['rowSpan']  : 1;
+        $cs = isset($merge['colSpan'])  ? (int)$merge['colSpan']  : 1;
+
+        if ($sr < 0 || $sc < 0 || $rs < 1 || $cs < 1) {
+            continue;
+        }
+
+        // не выходим за границы таблицы
+        if ($sr >= count($rowDefs) || $sc >= $columnsCount) {
+            continue;
+        }
+
+        $mergeTopLeft[$sr][$sc] = [
+            'rowSpan' => $rs,
+            'colSpan' => $cs,
+        ];
+
+        for ($r = $sr; $r < $sr + $rs; $r++) {
+            for ($c = $sc; $c < $sc + $cs; $c++) {
+                if ($r == $sr && $c == $sc) {
+                    continue; 
+                }
+                $skipCells[$r][$c] = true;
+            }
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -85,6 +127,7 @@ $rows      = $structure['rows'] ?? [];
                 <!-- Передаём ID активного шаблона скрытым полем -->
                 <input type="hidden" name="template_id" value="<?= (int)$template->getId() ?>">
 
+                <div id="data-table-container">
                 <table id="data-table">
                     <thead>
                     <tr>
@@ -95,37 +138,84 @@ $rows      = $structure['rows'] ?? [];
                     </tr>
                     </thead>
                     <tbody>
-                    <?php foreach ($rows as $rIndex => $row): ?>
-                        <tr>
-                            <?php foreach ($headers as $hIndex => $h): ?>
+                    <?php foreach ($rowDefs as $rIndex => $rowDef): ?>
+                            <?php
+                            // Распаковываем структуру строки:
+                            // либо новая форма {rowType, cells}, либо старая — просто массив значений
+                            if (is_array($rowDef)
+                                && array_key_exists('rowType', $rowDef)
+                                && array_key_exists('cells', $rowDef)
+                                && is_array($rowDef['cells'])
+                            ) {
+                                $rowType = $rowDef['rowType'] ?? 'normal';
+                                $cells   = $rowDef['cells'];
+                            } else {
+                                $rowType = 'normal';
+                                $cells   = is_array($rowDef) ? $rowDef : [];
+                            }
+
+                            if ($rowType === 'comment'): ?>
+                                <!-- Строка комментария: одна большая ячейка -->
                                 <?php
-                                // Имя столбца, тип и флаг "только для чтения"
-                                $name      = $h['name'];
-                                $type      = $h['type'] ?? 'text';
-                                $readonly  = !empty($h['readonly']);
-
-                                // Значение ячейки из структуры (если есть)
-                                $value     = $row[$name] ?? '';
-
-                                // Имя поля в POST: cell[0]["2022"], cell[1]["2023"] и т.п.
-                                $inputName = "cell[$rIndex][" . htmlspecialchars($name, ENT_QUOTES) . "]";
+                                // Значение по умолчанию из ячейки "Комментарий", если такая есть
+                                $commentValue = $cells['Комментарий'] ?? '';
                                 ?>
-                                <td>
-                                    <input
-                                        class="table-input"
-                                        <?= $readonly ? 'readonly' : '' ?>
-                                        type="<?= $type === 'number' ? 'number' : 'text' ?>"
-                                        name="<?= $inputName ?>"
-                                        value="<?= htmlspecialchars($value) ?>"
-                                    >
-                                </td>
-                            <?php endforeach; ?>
-                        </tr>
-                    <?php endforeach; ?>
-                    </tbody>
-                </table>
+                                <tr class="comment-row">
+                                    <td colspan="<?= (int)$columnsCount ?>">
+                                        <textarea
+                                            name="cell[<?= (int)$rIndex ?>][Комментарий]"
+                                        ><?= htmlspecialchars($commentValue) ?></textarea>
+                                    </td>
+                                </tr>
+                            <?php else: ?>
+                                <!-- Обычная строка (с учётом merges) -->
+                                <tr>
+                                    <?php for ($cIndex = 0; $cIndex < $columnsCount; $cIndex++): ?>
+                                        <?php
+                                        // Если эта ячейка “поглощена” объединением – не рисуем её
+                                        if (!empty($skipCells[$rIndex][$cIndex])) {
+                                            continue;
+                                        }
 
-                <button type="submit">Сохранить и отправить</button>
+                                        $h       = $headers[$cIndex];
+                                        $name    = $h['name'];
+                                        $type    = $h['type'] ?? 'text';
+                                        $readonly = !empty($h['readonly']);
+                                        $value   = $cells[$name] ?? '';
+
+                                        $rowspan = 1;
+                                        $colspan = 1;
+                                        if (!empty($mergeTopLeft[$rIndex][$cIndex])) {
+                                            $rowspan = (int)$mergeTopLeft[$rIndex][$cIndex]['rowSpan'];
+                                            $colspan = (int)$mergeTopLeft[$rIndex][$cIndex]['colSpan'];
+                                        }
+
+                                        $attrs = '';
+                                        if ($rowspan > 1) {
+                                            $attrs .= ' rowspan="' . $rowspan . '"';
+                                        }
+                                        if ($colspan > 1) {
+                                            $attrs .= ' colspan="' . $colspan . '"';
+                                        }
+                                        ?>
+                                        <td<?= $attrs ?>>
+                                            <input
+                                                class="table-input"
+                                                <?= $readonly ? 'readonly' : '' ?>
+                                                type="<?= $type === 'number' ? 'number' : 'text' ?>"
+                                                name="cell[<?= (int)$rIndex ?>][<?= htmlspecialchars($name, ENT_QUOTES) ?>]"
+                                                value="<?= htmlspecialchars($value) ?>"
+                                            >
+                                        </td>
+                                    <?php endfor; ?>
+                                </tr>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <button type="submit" id="saveTableBtn">Сохранить и отправить</button>
             </form>
         <?php endif; ?>
     </section>

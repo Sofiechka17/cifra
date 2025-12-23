@@ -33,8 +33,8 @@ $query = "
         u.is_admin,
         u.municipality_id,
         m.municipality_name
-    FROM users u
-    JOIN municipalities m ON m.municipality_id = u.municipality_id
+    FROM cit_schema.users u
+    JOIN cit_schema.municipalities m ON m.municipality_id = u.municipality_id
     WHERE u.user_login = $1
     LIMIT 1
 ";

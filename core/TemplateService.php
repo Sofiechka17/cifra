@@ -30,7 +30,7 @@ class TemplateService
                        template_headers,
                        template_structure,
                        is_active
-                  FROM table_templates
+                  FROM cit_schema.table_templates
                  WHERE is_active = TRUE
                  ORDER BY template_id DESC
                  LIMIT 1";
@@ -52,11 +52,41 @@ class TemplateService
     }
 
     /**
+     * Получает шаблон по его ID
+     */
+    public function getTemplateById(int $templateId): Template
+    {
+        $sql = "SELECT template_id,
+                       template_name,
+                       template_headers,
+                       template_structure,
+                       is_active
+                  FROM cit_schema.table_templates
+                 WHERE template_id = $1
+                 LIMIT 1";
+
+        $res = pg_query_params($this->conn, $sql, [$templateId]);
+        if (!$res || pg_num_rows($res) === 0) {
+            return Template::createEmpty();
+        }
+
+        $row = pg_fetch_assoc($res);
+
+        return new Template(
+            (int)$row['template_id'],
+            (string)$row['template_name'],
+            json_decode($row['template_headers'] ?? '[]', true) ?? [],
+            json_decode($row['template_structure'] ?? '{"rows":[]}', true) ?? ['rows' => []],
+            (bool)$row['is_active']
+        );
+    }
+
+    /**
      * Сохраняет новый шаблон, созданный в конструкторе
      */
     public function createTemplate(string $name, array $headers, array $structure, bool $makeActive = false): int
     {
-        $sql = "INSERT INTO table_templates (template_name, template_headers, template_structure, is_active)
+        $sql = "INSERT INTO cit_schema.table_templates (template_name, template_headers, template_structure, is_active)
                 VALUES ($1, $2::jsonb, $3::jsonb, $4)
                 RETURNING template_id";
 
@@ -85,13 +115,13 @@ class TemplateService
 
         try {
             // Сначала отключаем все активные шаблоны
-            $sqlOff = "UPDATE table_templates SET is_active = FALSE WHERE is_active = TRUE";
+            $sqlOff = "UPDATE cit_schema.table_templates SET is_active = FALSE WHERE is_active = TRUE";
             if (!pg_query($this->conn, $sqlOff)) {
                 throw new RuntimeException(pg_last_error($this->conn));
             }
 
             // Затем включаем нужный
-            $sqlOn  = "UPDATE table_templates SET is_active = TRUE WHERE template_id = $1";
+            $sqlOn  = "UPDATE cit_schema.table_templates SET is_active = TRUE WHERE template_id = $1";
             if (!pg_query_params($this->conn, $sqlOn, [$templateId])) {
                 throw new RuntimeException(pg_last_error($this->conn));
             }
@@ -108,7 +138,7 @@ class TemplateService
      */
     public function saveFilledData(int $userId, int $templateId, int $municipalityId, array $rows): void
     {
-        $sql = "INSERT INTO filled_data (user_id, template_id, municipality_id, filled_data)
+        $sql = "INSERT INTO cit_schema.filled_data (user_id, template_id, municipality_id, filled_data)
                 VALUES ($1, $2, $3, $4::jsonb)";
 
         $json = json_encode($rows, JSON_UNESCAPED_UNICODE);

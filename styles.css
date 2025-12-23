@@ -304,3 +304,251 @@ form button:hover {
 #saveTableBtn:hover {
     background-color: #CC4400;
 }
+
+/* Стили для админ-панели */
+.admin-body {
+  background: #000;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  margin: 20px;
+}
+
+/* В админке формы должны растягиваться на всю ширину, а не 500px */
+.admin-body form {
+  max-width: none;
+  width: 100%;
+}
+
+/* Заголовки в админке */
+.admin-body h2 {
+  color: #fff;
+  margin-top: 30px;
+  margin-bottom: 15px;
+  font-size: 24px;
+}
+
+/* Обычные таблицы (списки) */
+.admin-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 25px;
+}
+
+.admin-body th,
+.admin-body td {
+  border: 1px solid #555;
+  padding: 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.admin-body th {
+  background: #111;
+  color: #fff;
+}
+
+/* Кнопки в админке */
+.admin-body .btn {
+  background: #444;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+
+.admin-body .btn:hover {
+  background: #666;
+}
+
+/* Текст в конструкторе — как на главной (крупный и по всей ширине) */
+.constructor-intro,
+.merge-instructions {
+  font-size: 18px;
+  line-height: 1.6;
+  max-width: none;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+/* Лейбл с чекбоксом "Сделать активным" */
+.template-active-label {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+}
+
+/* Блок с полями Кол-во строк/столбцов */
+.rows-cols-wrapper {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 30px;
+}
+
+.rows-cols-wrapper label input {
+  width: 80px;
+}
+
+/* Сообщения конструктора */
+.admin-body .message {
+  padding: 10px 15px;
+  border-radius: 6px;
+  margin: 10px 0 15px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.message-success {
+  background-color: #093;
+  color: #fff;
+}
+
+.message-error {
+  background-color: #933;
+  color: #fff;
+}
+
+/* Панель конструкторских кнопок — в одну линию */
+.admin-body .constructor-toolbar {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.admin-body .constructor-toolbar button,
+.admin-body .constructor-actions button,
+.admin-body .merge-toolbar button {
+  background-color: #444;
+  color: #FFFEFE;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-body .constructor-toolbar button:hover,
+.admin-body .constructor-actions button:hover,
+.admin-body .merge-toolbar button:hover {
+  background-color: #666;
+}
+
+/* Панель управления ячейками */
+.admin-body .merge-toolbar {
+  margin-top: 15px;
+  padding: 10px 15px;
+  background: #111;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.admin-body .merge-toolbar p {
+  margin: 0 15px 0 0;
+  font-weight: 600;
+  color: #c1c1c1;
+}
+
+/* Чекбокс "Сделать этот шаблон активным" в админке */
+.admin-body .template-active-wrapper {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-start; /* прижать к левому краю */
+}
+
+.admin-body .template-active-label {
+  display: inline-flex;
+  align-items: center;   /* чекбокс и текст по одной линии */
+  gap: 8px;              /* расстояние между галочкой и текстом */
+  font-size: 16px;
+}
+
+.admin-body .template-active-label input[type="checkbox"] {
+  width: auto;           
+  margin: 0;
+}
+
+/* Подпись "только чтение" в заголовках – тоже одной линией */
+.admin-body .readonly-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.admin-body .readonly-label input[type="checkbox"] {
+  margin: 0;
+}
+
+.admin-body #selection-info {
+  margin-left: auto;
+  font-size: 14px;
+  color: #9ffa9f;
+}
+
+/* Блок конструктора */
+.admin-body #constructor-wrapper {
+  margin-top: 20px;
+  overflow-x: auto;
+  width: 100%;
+}
+
+/* таблица конструктора*/
+.admin-body #constructor-table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 1200px; /* чтобы визуально была "во всю страницу", как в примере */
+}
+
+.admin-body #constructor-table th,
+.admin-body #constructor-table td {
+  border: 1px solid #555;
+  padding: 6px;
+  vertical-align: top;
+}
+
+.admin-body #constructor-table th {
+  background-color: #333;
+  color: #fff;
+}
+
+/* Поля ввода в конструкторе */
+.admin-body .header-name-input,
+.admin-body .header-type-select,
+.admin-body .cell-input {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  padding: 6px 8px;
+  background: #222;
+  color: #FFFEFE;
+}
+
+.admin-body .header-type-select {
+  padding-right: 20px;
+}
+
+/* Кнопка "Сохранить шаблон" */
+.admin-body .constructor-actions {
+  margin-top: 20px;
+}
+
+/* Подсветка выделенных ячеек в конструкторе */
+.admin-body #constructor-table td.cell-selected {
+  box-shadow: 0 0 0 2px #0ef inset;
+}
+
+/* Строка с комментарием в таблице формы (если пригодится) */
+.comment-row textarea {
+  width: 100%;
+  min-height: 80px;
+  box-sizing: border-box;
+  resize: vertical;
+}

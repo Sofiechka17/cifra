@@ -39,7 +39,7 @@ if ($templateId <= 0 || !is_array($cells)) {
 // Получаем municipality_id пользователя
 $sqlUser = "
     SELECT municipality_id
-      FROM users
+      FROM cit_schema.users
      WHERE user_id = $1
      LIMIT 1
 ";
@@ -52,6 +52,31 @@ if (!$resUser || pg_num_rows($resUser) === 0) {
 $rowUser        = pg_fetch_assoc($resUser);
 $municipalityId = (int)$rowUser['municipality_id'];
 
+// Получаем шаблон и типы колонок
+$service  = new TemplateService($conn);
+$template = $service->getTemplateById($templateId);
+$headers  = $template->getHeaders();
+
+// имя столбца - тип
+$columnTypes = [];
+foreach ($headers as $h) {
+    $name = $h['name'] ?? '';
+    if ($name === '') continue;
+    $columnTypes[$name] = $h['type'] ?? 'text';
+}
+
+// индекс строки - rowType (normal/comment)
+$structure = $template->getStructure();
+$rowDefs   = $structure['rows'] ?? [];
+$rowTypes  = [];
+foreach ($rowDefs as $idx => $rowDef) {
+    if (is_array($rowDef) && array_key_exists('rowType', $rowDef)) {
+        $rowTypes[$idx] = $rowDef['rowType'] ?? 'normal';
+    } else {
+        $rowTypes[$idx] = 'normal';
+    }
+}
+
 /**
  * Проверка числовых полей:
  * - текстовые колонки: Показатели, Единица измерения, Комментарий — не трогаем
@@ -59,37 +84,42 @@ $municipalityId = (int)$rowUser['municipality_id'];
  */
 
 $hasErrors = false;
+
 foreach ($cells as $rIndex => &$row) {
+    $rowType = $rowTypes[$rIndex] ?? 'normal';
+
     foreach ($row as $colName => &$value) {
         $value = trim((string)$value);
 
-        // Пропускаем текстовые столбцы
-        if (
-            $colName === 'Показатели' ||
-            $colName === 'Единица измерения' ||
-            $colName === 'Комментарий'
-        ) {
+        if ($rowType === 'comment') {
+            // строка комментария — любые текстовые данные
             continue;
         }
 
-        // Обязательное поле: если пусто — ошибка
+        $type = $columnTypes[$colName] ?? 'text';
+
+        // текстовые колонки не проверяем как числа
+        if ($type === 'text') {
+            continue;
+        }
+
+        // числовое поле обязательно
         if ($value === '') {
             $hasErrors = true;
             continue;
         }
 
-        // Заменяем запятую на точку и проверяем, число ли это, то есть перевод с русского формата на формат, который понимает PHP
         $normalized = str_replace(',', '.', $value);
         if (!is_numeric($normalized)) {
             $hasErrors = true;
             continue;
         }
 
-        // Сохраняем уже нормализованное значение
+        // сохраняем нормализованное значение
         $value = $normalized;
     }
 }
-unset($row, $value); 
+unset($row, $value);
 
 // Если есть ошибки — ничего не сохраняем, общее сообщение
 if ($hasErrors) {
@@ -101,8 +131,6 @@ if ($hasErrors) {
 }
 
 // Сохраняем данные через сервис (Фасад)
-$service = new TemplateService($conn);
-
 try {
     $service->saveFilledData($userId, $templateId, $municipalityId, $cells);
     // Ответ пользователю
@@ -112,3 +140,4 @@ try {
     http_response_code(500);
     echo "Ошибка сохранения данных: " . htmlspecialchars($e->getMessage());
 }
+

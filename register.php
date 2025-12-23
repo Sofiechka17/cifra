@@ -23,7 +23,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 
     // Проверка уникальности логина и email
-    $checkQuery = "SELECT user_id FROM users WHERE user_login = $1 OR user_email = $2";
+    $checkQuery = "SELECT user_id FROM cit_schema.users WHERE user_login = $1 OR user_email = $2";
     $checkResult = pg_query_params($conn, $checkQuery, [$login, $email]);
     if (pg_num_rows($checkResult) > 0) {
         echo json_encode(["success" => false, "message" => "Пользователь с таким логином или email уже существует"]);
@@ -36,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     // is_admin по умолчанию false
     $isAdmin = 'f';
 
-    $query = "INSERT INTO users 
+    $query = "INSERT INTO cit_schema.users 
               (user_full_name, user_login, user_password, user_email, user_phone, municipality_id, is_admin) 
               VALUES ($1, $2, $3, $4, $5, $6, $7)";
 

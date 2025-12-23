@@ -2,16 +2,17 @@
 /**
  * Страница администратора
  * Отображает:
- *  - список заполненных пользователями таблиц с возможностью выгрузки в Excel
- *  - список заявок обратной связи с возможностью выгрузки в Excel
+ * - список заполненных пользователями таблиц с возможностью выгрузки в Excel
+ * - список заявок обратной связи с возможностью выгрузки в Excel
+ * - конструктор шаблона таблицы (для пользователей)
  */
 
-session_start();
-include "db.php";
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/core/TemplateService.php';
 
-if (empty($_SESSION["is_admin"])) {
-    die("Доступ запрещён");
-}
+require_admin(); 
+$service = new TemplateService($conn);
 
 /**
  * Получение списка всех заполненных таблиц 
@@ -41,47 +42,11 @@ $feedbackResult = pg_query($conn, "
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Админ — заполненные таблицы</title>
-    <style>
-        body {
-            background: #000;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        h2 {
-            color: #fff;
-            margin-top: 30px;
-            margin-bottom: 15px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 25px;
-        }
-        th, td {
-            border: 1px solid #555;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background: #111;
-            color: #fff;
-        }
-        .btn {
-            background: #444;
-            color: #fff;
-            border: none;
-            padding: 6px 12px;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-        .btn:hover {
-            background: #666;
-        }
-    </style>
+    <title>Администратор - отчеты и шаблоны</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="constructor.js" defer></script>
 </head>
-<body>
+<body class="admin-body">
     <h2>Заполненные таблицы</h2>
     <table>
         <tr>
@@ -129,5 +94,74 @@ $feedbackResult = pg_query($conn, "
     <button type="submit" class="btn">Выгрузить все заявки в Excel</button>
 </form>
 
+<hr style="margin:30px 0;">
+
+    <h2>Конструктор шаблона таблицы</h2>
+
+    <p class="constructor-intro">
+        Здесь вы можете создать или изменить шаблон отчётной таблицы.
+        Активный шаблон увидят все пользователи на странице «Заполнить форму».
+    </p>
+
+    <p class="merge-instructions">
+        Чтобы объединить ячейки: зажмите <b>Shift</b> и кликните сначала по первой ячейке диапазона,
+        потом по последней. Все ячейки внутри прямоугольника выделятся — после этого нажмите
+        кнопку «Объединить выбранные ячейки».<br>
+        Чтобы разъединить: таким же образом выделите диапазон и нажмите
+        «Разъединить ячейки».<br>
+        Кнопки «Удалить выбранные строки» и «Удалить выбранные столбцы» удаляют
+        строки/столбцы, попадающие в выделенный диапазон.
+    </p>
+
+    <form id="template-form" onsubmit="return false;">
+
+        <label for="template-name">Название шаблона:</label>
+        <input type="text" id="template-name" name="template_name" required>
+
+        <div class="template-active-wrapper">
+            <label class="template-active-label">
+                <input type="checkbox" id="make-active-checkbox">
+                Сделать этот шаблон активным
+            </label>
+        </div>
+
+        <div class="rows-cols-wrapper">
+            <label>
+                Количество строк:
+                <input type="number" id="rows-count" min="1" max="200" value="5">
+            </label>
+            <label>
+                Количество столбцов:
+                <input type="number" id="cols-count" min="1" max="20" value="7">
+            </label>
+        </div>
+
+        <div class="constructor-toolbar">
+            <button type="button" id="generate-table-btn">Сгенерировать таблицу</button>
+            <button type="button" id="clear-table-btn">Очистить содержимое</button>
+            <button type="button" id="reset-table-btn">Сбросить к дефолтному виду</button>
+        </div>
+
+        <div class="merge-toolbar">
+            <p>Блок управления ячейками:</p>
+            <button type="button" id="merge-cells-btn">Объединить выбранные ячейки</button>
+            <button type="button" id="unmerge-cells-btn">Разъединить ячейки</button>
+            <button type="button" id="delete-row-btn">Удалить выбранные строки</button>
+            <button type="button" id="delete-col-btn">Удалить выбранные столбцы</button>
+            <span id="selection-info">Выделено ячеек: 0</span>
+        </div>
+        
+        <div id="constructor-messages" class="constructor-messages"></div>
+
+        <div id="constructor-wrapper">
+            <table id="constructor-table">
+                <!-- JS строит таблицу -->
+            </table>
+        </div>
+
+        <div class="constructor-actions">
+            <button type="button" id="save-template-btn">Сохранить шаблон</button>
+        </div>
+    </form>
 </body>
 </html>
