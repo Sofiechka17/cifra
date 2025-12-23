@@ -36,7 +36,44 @@ $feedbackResult = pg_query($conn, "
     FROM cit_schema.feedback_requests fr
     ORDER BY fr.feedback_id DESC
 ");
+/**
+ * Загрузка конкретного шаблона по ID (если передан ?template_id=...)
+ */
+$loadedTemplateArray = null;
 
+if (!empty($_GET['template_id'])) {
+    $tplId = (int)$_GET['template_id'];
+    if ($tplId > 0) {
+        try {
+            $templateObj = $service->getTemplateById($tplId); 
+
+            if ($templateObj) {
+                $loadedTemplateArray = [
+                    'headers'   => $templateObj->getHeaders(),
+                    'structure' => $templateObj->getStructure(),
+                ];
+            }
+        } catch (Exception $e) {
+            $loadedTemplateArray = null;
+        }
+    }
+}
+
+/**
+ * Список всех шаблонов для выпадающего списка
+ * Здесь читаем данные напрямую из таблицы шаблонов
+ */
+$templatesList = [];
+$tplRes = pg_query($conn, "
+    SELECT template_id, template_name, is_active
+    FROM cit_schema.table_templates
+    ORDER BY template_id DESC
+");
+if ($tplRes) {
+    while ($row = pg_fetch_assoc($tplRes)) {
+        $templatesList[] = $row;
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -44,6 +81,14 @@ $feedbackResult = pg_query($conn, "
     <meta charset="UTF-8">
     <title>Администратор - отчеты и шаблоны</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Передаём в JS загруженный из БД шаблон (если есть) -->
+    <script>
+        window.initialTemplate = <?=
+            $loadedTemplateArray
+                ? json_encode($loadedTemplateArray, JSON_UNESCAPED_UNICODE)
+                : 'null';
+        ?>;
+    </script>
     <script src="constructor.js" defer></script>
 </head>
 <body class="admin-body">
@@ -112,7 +157,26 @@ $feedbackResult = pg_query($conn, "
         Кнопки «Удалить выбранные строки» и «Удалить выбранные столбцы» удаляют
         строки/столбцы, попадающие в выделенный диапазон.
     </p>
-
+    <?php if (!empty($templatesList)): ?>
+        <div class="template-select-wrapper" style="margin-bottom:15px;">
+            <label for="templates-select">Загрузить сохранённый шаблон:</label>
+            <select id="templates-select"
+                    onchange="if(this.value){location.href='admin_view.php?template_id='+this.value;}">
+                <option value="">-- выберите шаблон --</option>
+                <?php foreach ($templatesList as $tpl): ?>
+                    <?php
+                    $id   = (int)($tpl['template_id'] ?? $tpl['id'] ?? 0);
+                    $name = htmlspecialchars($tpl['template_name'] ?? $tpl['name'] ?? ('ID '.$id), ENT_QUOTES, 'UTF-8');
+                    $isActive = !empty($tpl['is_active']);
+                    $selected = (!empty($_GET['template_id']) && (int)$_GET['template_id'] === $id) ? 'selected' : '';
+                    ?>
+                    <option value="<?= $id ?>" <?= $selected ?>>
+                        ID <?= $id ?> — <?= $name ?><?= $isActive ? ' (активный)' : '' ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+    <?php endif; ?>
     <form id="template-form" onsubmit="return false;">
 
         <label for="template-name">Название шаблона:</label>

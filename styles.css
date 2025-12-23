@@ -244,11 +244,11 @@ form button:hover {
     margin: 20px 0;
 }
 
-/* Таблица с показателями(данные для прогноза) */
+/* Таблица с показателями*/
 #data-table {
     border-collapse: collapse;
-    width: max-content; 
-    min-width: 100%;
+    width: 100%; 
+    table-layout: fixed;
 }
 
 /* Ячейки таблицы: заголовки и данные */

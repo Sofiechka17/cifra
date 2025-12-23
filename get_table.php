@@ -34,6 +34,7 @@ $municipalityName = current_municipality_name() ?? 'Муниципальное �
 $headers   = $template->getHeaders();
 $structure = $template->getStructure();
 $rowDefs      = $structure['rows'] ?? [];
+$merges   = $structure['merges'] ?? [];
 $columnsCount = count($headers);
 /**
  * объединения для HTML
@@ -215,10 +216,90 @@ if (is_array($merges)) {
                     </table>
                 </div>
 
-                <button type="submit" id="saveTableBtn">Сохранить и отправить</button>
+                <button type="button" id="saveTableBtn">Сохранить и отправить</button>
             </form>
         <?php endif; ?>
     </section>
 </main>
+<!-- Модальное окно: таблица сохранена -->
+<div class="modal" id="tableSavedModal" style="display:none; align-items:center; justify-content:center;">
+  <div class="modal-content" style="background:#fff; padding:20px; border-radius:12px; text-align:center; max-width:420px;">
+    <span class="close" id="closeTableSavedModal" style="float:right; cursor:pointer;">&times;</span>
+    <p id="tableSavedMessage" style="color:#000; margin:0;">Данные успешно сохранены.</p>
+  </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const dataForm = document.getElementById("data-form");
+  const saveBtn = document.getElementById("saveTableBtn");
+  if (!dataForm || !saveBtn) return;
+
+  // ограничение ввода в number
+  dataForm.querySelectorAll('#data-table input[type="number"]').forEach(inp => {
+    inp.addEventListener("input", () => {
+      inp.value = inp.value.replace(/[^0-9.,-]/g, "");
+    });
+  });
+
+  function validateTable() {
+    let hasErrors = false;
+    const inputs = dataForm.querySelectorAll("#data-table input");
+    inputs.forEach(i => i.classList.remove("input-error"));
+
+    inputs.forEach(input => {
+      const nameAttr = input.getAttribute("name") || "";
+      const isComment = nameAttr.includes("[Комментарий]");
+      const isTextCol = nameAttr.includes("[Показатели]") || nameAttr.includes("[Единица измерения]");
+      if (isComment || isTextCol) return;
+
+      const value = input.value.trim();
+      if (value === "") { input.classList.add("input-error"); hasErrors = true; return; }
+      const normalized = value.replace(",", ".");
+      if (isNaN(normalized)) { input.classList.add("input-error"); hasErrors = true; return; }
+    });
+
+    return !hasErrors;
+  }
+
+  saveBtn.addEventListener("click", async () => {
+    if (!validateTable()) {
+      alert("Не все числовые поля заполнены или заполнены некорректно.\nЗаполните все обязательные ячейки и повторите отправку.");
+      return;
+    }
+
+    try {
+      const formData = new FormData(dataForm);
+
+      const res = await fetch(dataForm.action || "save_table.php", {
+        method: "POST",
+        body: formData,
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "Accept": "application/json"
+        }
+      });
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        const text = await res.text();
+        alert("Сервер вернул не JSON (скорее всего ошибка PHP). Вот ответ:\n\n" + text);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message || "Данные успешно сохранены.");
+      } else {
+        alert(data.message || "Ошибка сохранения данных.");
+      }
+    } catch (err) {
+      alert("Ошибка сети: " + err);
+    }
+  });
+
+  // если всё же попробует submit (Enter) — стопаем
+  dataForm.addEventListener("submit", (e) => e.preventDefault());
+});
+</script>
 </body>
 </html>

@@ -141,6 +141,30 @@ document.addEventListener("DOMContentLoaded", () => {
         applySelectionStyles();
     }
 
+    /**
+     * Инициализация из существующего шаблона (загруженного из БД)
+     */
+    function initFromExistingTemplate(dto) {
+        templateNameInput.value = dto.template_name || dto.name || "Шаблон";
+
+        headers = Array.isArray(dto.headers) ? dto.headers : [];
+        const structure = dto.structure || {};
+        rows   = Array.isArray(structure.rows)   ? structure.rows   : [];
+        merges = Array.isArray(structure.merges) ? structure.merges : [];
+
+        // если в шаблоне нет строк — сделаем дефолт
+        if (!rows.length || !headers.length) {
+            initDefaultTemplate();
+            return;
+        }
+
+        rowsCountInput.value = rows.length;
+        colsCountInput.value = headers.length;
+
+        clearSelection();
+        renderTable();
+    }
+
     // исходный шаблон
     function initDefaultTemplate() {
         templateNameInput.value = "Новый шаблон";
@@ -158,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!Number.isInteger(rowsCount) || rowsCount <= 0) rowsCount = 5;
 
         rows = [];
-        const commentRowIndex = rowsCount - 1;
+        const commentRowIndex = rowsCount - 1; // последняя строка — комментарий
 
         for (let i = 0; i < rowsCount; i++) {
             const cells = {};
@@ -173,9 +197,16 @@ document.addEventListener("DOMContentLoaded", () => {
         colsCountInput.value = headers.length;
 
         merges = [];
+        if (rows.length > 0) {
+            merges.push({
+                startRow: commentRowIndex,
+                startCol: 0,
+                rowSpan: 1,
+                colSpan: headers.length
+            });
+        }
         clearSelection();
         renderTable();
-        showMessage("success", "Таблица сброшена к исходному виду.");
     }
 
     // отрисовка
@@ -272,6 +303,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const input = document.createElement("input");
                 input.type = h.type === "number" ? "number" : "text";
+                // если столбец числовой — не даём вводить буквы
+                if (h.type === "number") {
+                    input.addEventListener("input", () => {
+                        // только цифры, точка, запятая и минус
+                        input.value = input.value.replace(/[^0-9.,-]/g, "");
+                    });
+                }
                 const val = row.cells && Object.prototype.hasOwnProperty.call(row.cells, h.name)
                     ? row.cells[h.name]
                     : "";
@@ -335,7 +373,25 @@ document.addEventListener("DOMContentLoaded", () => {
         const select = e.target;
         const rIndex = parseInt(select.dataset.rowIndex, 10);
         if (!rows[rIndex]) return;
-        rows[rIndex].rowType = select.value === "comment" ? "comment" : "normal";
+
+        const newType = select.value === "comment" ? "comment" : "normal";
+        rows[rIndex].rowType = newType;
+
+        // убираем старые объединения, которые целиком лежат в этой строке
+        merges = merges.filter((m) => !(m.rowSpan === 1 && m.startRow === rIndex));
+
+        // если это комментарий — объединяем всю строку (все данные столбцов)
+        if (newType === "comment") {
+            merges.push({
+                startRow: rIndex,
+                startCol: 0,
+                rowSpan: 1,
+                colSpan: headers.length
+            });
+        }
+
+        clearSelection();
+        renderTable();
     }
 
     // Генерация по количеству строк/столбцов
@@ -348,25 +404,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (colsCount > headers.length) {
             for (let i = headers.length; i < colsCount; i++) {
-                headers.push({ name: "Столбец " + (i + 1), type: "text", readonly: false });
+                headers.push({
+                    name: "Столбец " + (i + 1),
+                    type: "text",
+                    readonly: false
+                });
             }
         } else if (colsCount < headers.length) {
             headers = headers.slice(0, colsCount);
         }
 
         rows = [];
-        const commentRowIndex = rowsCount - 1;
+        const commentRowIndex = rowsCount - 1; // последняя строка — комментарий
 
         for (let r = 0; r < rowsCount; r++) {
             const cells = {};
-            headers.forEach(h => { cells[h.name] = ""; });
+            headers.forEach((h) => {
+                cells[h.name] = "";
+            });
+
             rows.push({
                 rowType: r === commentRowIndex ? "comment" : "normal",
                 cells: cells
             });
         }
 
+        // авто-объединение строки комментария
         merges = [];
+        if (rows.length > 0) {
+            merges.push({
+                startRow: commentRowIndex,
+                startCol: 0,
+                rowSpan: 1,
+                colSpan: headers.length
+            });
+        }
+
         clearSelection();
         renderTable();
     }
@@ -445,15 +518,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (startRow === endRow && startCol === endCol) {
             showMessage("error", "Нужно выделить хотя бы две ячейки для объединения.");
             return;
-        }
-
-        for (let r = startRow; r <= endRow; r++) {
-            const rowDef = rows[r];
-            if (!rowDef) continue;
-            if (rowDef.rowType === "comment") {
-                showMessage("error", "Нельзя объединять ячейки в строках комментария.");
-                return;
-            }
         }
 
         function intersects(m) {
@@ -629,5 +693,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (deleteRowBtn) deleteRowBtn.addEventListener("click", deleteSelectedRows);
     if (deleteColBtn) deleteColBtn.addEventListener("click", deleteSelectedCols);
 
-    initDefaultTemplate();
+    // Инициализация: либо из БД, либо дефолт
+    if (window.initialTemplate) {
+        initFromExistingTemplate(window.initialTemplate);
+    } else {
+        initDefaultTemplate();
+    }
 });

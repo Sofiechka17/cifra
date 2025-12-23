@@ -160,41 +160,62 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
     
-    // Валидация таблицы перед отправкой (заполнение показателей) 
+    // Отправка таблицы 
     const dataForm = document.getElementById("data-form");
     if (dataForm) {
-        dataForm.addEventListener("submit", (e) => {
+        const modalSaved = document.getElementById("tableSavedModal");
+        const closeSaved = document.getElementById("closeTableSavedModal");
+        const msgSaved = document.getElementById("tableSavedMessage");
+
+        function showSaved(text) {
+            if (modalSaved && msgSaved) {
+                msgSaved.textContent = text || "Данные успешно сохранены.";
+                modalSaved.style.display = "flex";
+            } else {
+                alert(text || "Данные успешно сохранены.");
+            }
+        }
+
+        if (closeSaved && modalSaved) {
+            closeSaved.addEventListener("click", () => (modalSaved.style.display = "none"));
+            modalSaved.addEventListener("click", (e) => {
+                if (e.target === modalSaved) modalSaved.style.display = "none";
+            });
+        }
+
+        // Ограничение ввода в числовых полях
+        const numericInputs = dataForm.querySelectorAll('#data-table input[type="number"]');
+        numericInputs.forEach((input) => {
+            input.addEventListener("input", () => {
+                input.value = input.value.replace(/[^0-9.,-]/g, "");
+            });
+        });
+
+        // Проверка таблицы перед отправкой
+        function validateTable() {
             let hasErrors = false;
 
             const inputs = dataForm.querySelectorAll("#data-table input");
+            inputs.forEach((input) => input.classList.remove("input-error"));
 
-            // Сначала убираем старую подсветку
-            inputs.forEach(input => input.classList.remove("input-error"));
-
-            inputs.forEach(input => {
+            inputs.forEach((input) => {
                 const nameAttr = input.getAttribute("name") || "";
 
-                // Имя вида: cell[0][2022], cell[0][Показатели], cell[0][Комментарий]
                 const isComment = nameAttr.includes("[Комментарий]");
                 const isTextCol =
                     nameAttr.includes("[Показатели]") ||
                     nameAttr.includes("[Единица измерения]");
 
-                // Текстовые и комментарий не проверяем
-                if (isComment || isTextCol) {
-                    return;
-                }
+                // комментарий и текстовые колонки не проверяем
+                if (isComment || isTextCol) return;
 
                 const value = input.value.trim();
-
-                // Пустое числовое поле — ошибка
                 if (value === "") {
                     input.classList.add("input-error");
                     hasErrors = true;
                     return;
                 }
 
-                // Заменяем запятую на точку и проверяем, число ли это
                 const normalized = value.replace(",", ".");
                 if (isNaN(normalized)) {
                     input.classList.add("input-error");
@@ -203,10 +224,51 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
 
-            if (hasErrors) {
-                e.preventDefault(); // ошибка, не отправляем форму
-                alert("Не все числовые поля заполнены или заполнены корректно.\nЗаполните все обязательные ячейки и повторите отправку.");
+            return !hasErrors;
+        }
+
+        // перехватываем submit и отправляем AJAX
+        dataForm.addEventListener("submit", async (e) => {
+            e.preventDefault(); 
+
+            if (!validateTable()) {
+                alert(
+                    "Не все числовые поля заполнены или заполнены некорректно.\n" +
+                    "Заполните все обязательные ячейки и повторите отправку."
+                );
+                return;
+            }
+
+            try {
+                const formData = new FormData(dataForm);
+
+                const res = await fetch(dataForm.action || "save_table.php", {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Accept": "application/json"
+                    }
+                });
+
+                // Если сервер вернул не JSON — покажем текст 
+                const contentType = res.headers.get("content-type") || "";
+                if (!contentType.includes("application/json")) {
+                    const text = await res.text();
+                    alert("Сервер вернул не JSON. Скорее всего ошибка PHP:\n\n" + text);
+                    return;
+                }
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showSaved(data.message || "Данные успешно сохранены.");
+                } else {
+                    alert(data.message || "Ошибка сохранения данных.");
+                }
+            } catch (err) {
+                alert("Ошибка сети: " + err);
             }
         });
-    }        
+    }
 });

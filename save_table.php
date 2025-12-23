@@ -12,8 +12,21 @@ require_once __DIR__ . '/auth.php';
 require_auth();
 require_once __DIR__ . '/core/TemplateService.php';
 
+$isAjax = (
+    !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+    strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest'
+) || (
+    !empty($_SERVER['HTTP_ACCEPT']) &&
+    strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false
+);
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
+    if ($isAjax) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'message' => 'Метод не поддерживается'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     echo 'Метод не поддерживается';
     exit;
 }
@@ -22,6 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $userId = current_user_id();
 if ($userId === null) {
     http_response_code(401);
+    if ($isAjax) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'message' => 'Необходима авторизация'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     echo 'Необходима авторизация';
     exit;
 }
@@ -32,6 +50,11 @@ $cells      = $_POST['cell'] ?? [];
 
 if ($templateId <= 0 || !is_array($cells)) {
     http_response_code(400);
+    if ($isAjax) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'message' => 'Неверные данные формы'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     echo 'Неверные данные формы';
     exit;
 }
@@ -46,6 +69,11 @@ $sqlUser = "
 $resUser = pg_query_params($conn, $sqlUser, [$userId]);
 if (!$resUser || pg_num_rows($resUser) === 0) {
     http_response_code(400);
+    if ($isAjax) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['success' => false, 'message' => 'Не найдено муниципальное образование пользователя'], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     echo 'Не найдено муниципальное образование пользователя';
     exit;
 }
@@ -124,6 +152,14 @@ unset($row, $value);
 // Если есть ошибки — ничего не сохраняем, общее сообщение
 if ($hasErrors) {
     http_response_code(400);
+    if ($isAjax) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Не все поля заполнены или заполнены некорректно.'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     echo '<h3>Не все поля заполнены или заполнены некорректно.</h3>';
     echo '<p>Заполните все обязательные числовые ячейки, затем повторите отправку.</p>';
     echo '<p><a href="javascript:history.back()">Вернуться к заполнению таблицы</a></p>';
@@ -133,11 +169,27 @@ if ($hasErrors) {
 // Сохраняем данные через сервис (Фасад)
 try {
     $service->saveFilledData($userId, $templateId, $municipalityId, $cells);
+    if ($isAjax) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => true,
+            'message' => 'Данные успешно сохранены.'
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     // Ответ пользователю
     echo "Данные успешно сохранены.";
     echo '<br><a href="get_table.php">Вернуться к таблице</a>';
 } catch (Throwable $e) {
     http_response_code(500);
+    if ($isAjax) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Ошибка сохранения данных: ' . $e->getMessage()
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     echo "Ошибка сохранения данных: " . htmlspecialchars($e->getMessage());
 }
 
