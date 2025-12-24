@@ -6,6 +6,8 @@ require_once __DIR__ . '/Template.php';
  *
  * Снаружи система работает только с этим классом, код не лезет в бд напрямую
  *  - получить активный шаблон
+ *  - получить шаблон по ID
+ *  - создать шаблон
  *  - сохранить шаблон
  *  - сделать шаблон активным
  *  - сохранить заполненную таблицу
@@ -14,6 +16,11 @@ class TemplateService
 {
     private \PgSql\Connection $conn;
 
+    /**
+     * Создаёт сервис шаблонов.
+     *
+     * @param resource|\PgSql\Connection $conn Соединение PostgreSQL.
+     */
     public function __construct($conn)
     {
         $this->conn = $conn;
@@ -22,6 +29,7 @@ class TemplateService
     /**
      * Загружает активный шаблон.
      * Если активный не найден — возвращает Template::createEmpty() , специальный "пустой" шаблон
+     * @return Template Активный шаблон или "пустой" шаблон.
      */
     public function getActiveTemplate(): Template
     {
@@ -53,6 +61,10 @@ class TemplateService
 
     /**
      * Получает шаблон по его ID
+     * Если шаблон не найден — возвращает Template::createEmpty().
+     *
+     * @param int $templateId ID шаблона.
+     * @return Template Найденный шаблон или "пустой" шаблон.
      */
     public function getTemplateById(int $templateId): Template
     {
@@ -83,6 +95,14 @@ class TemplateService
 
     /**
      * Сохраняет новый шаблон, созданный в конструкторе
+     * @param string $name        Название шаблона.
+     * @param array  $headers     Заголовки колонок (массив).
+     * @param array  $structure   Структура таблицы (rows/merges).
+     * @param bool   $makeActive  Сделать шаблон активным после сохранения.
+     *
+     * @return int ID созданного шаблона.
+     *
+     * @throws RuntimeException Если INSERT завершился ошибкой.
      */
     public function createTemplate(string $name, array $headers, array $structure, bool $makeActive = false): int
     {
@@ -108,6 +128,10 @@ class TemplateService
     /**
      * Делает указанный шаблон активным и все остальные деактивирует.
      * Вызывается, когда админ нажимает кнопку «Отправить».
+     * @param int $templateId ID шаблона, который нужно сделать активным.
+     * @return void
+     *
+     * @throws Throwable Если произошла ошибка в транзакции (COMMIT/ROLLBACK).
      */
     public function setActiveTemplate(int $templateId): void
     {
@@ -135,6 +159,14 @@ class TemplateService
 
     /**
      * Сохраняет заполненную пользователем таблицу в JSON-формате
+     * @param int   $userId         ID пользователя.
+     * @param int   $templateId     ID шаблона.
+     * @param int   $municipalityId ID муниципального образования.
+     * @param array $rows           Данные таблицы (строки/ячейки) для JSON.
+     *
+     * @return void
+     *
+     * @throws RuntimeException Если не удалось сериализовать JSON или INSERT завершился ошибкой.
      */
     public function saveFilledData(int $userId, int $templateId, int $municipalityId, array $rows): void
     {

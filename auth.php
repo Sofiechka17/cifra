@@ -5,6 +5,7 @@
 
 /**
  * Гарантирует, что сессия запущена
+ * @return void
  */
 function ensure_session_started(): void
 {
@@ -15,6 +16,8 @@ function ensure_session_started(): void
 
 /**
  * Проверяет, что пользователь авторизован
+ * При отсутствии авторизации выводит сообщение и завершает выполнение (exit).
+ * @return void
  */
 function require_auth(): void
 {
@@ -45,7 +48,8 @@ function require_auth(): void
 
 /**
  * Проверяет, что текущий пользователь — администратор
- * При отсутствии прав завершает выполнение
+ * При отсутствии прав завершает выполнение (die) с HTTP 403.
+ * @return void
  */
 function require_admin(): void
 {
@@ -58,6 +62,7 @@ function require_admin(): void
 
 /**
  * Возвращает ID текущего пользователя или null
+ * @return int|null ID пользователя или null, если не авторизован.
  */
 function current_user_id(): ?int
 {
@@ -67,6 +72,7 @@ function current_user_id(): ?int
 
 /**
  * Возвращает имя пользователя (ФИО) или null
+ * @return string|null ФИО или null, если не задано.
  */
 function current_user_name(): ?string
 {
@@ -76,6 +82,7 @@ function current_user_name(): ?string
 
 /**
  * Возвращает название муниципального образования из сессии или null
+ * @return string|null Название МО или null, если не задано.
  */
 function current_municipality_name(): ?string
 {
@@ -84,7 +91,8 @@ function current_municipality_name(): ?string
 }
 
 /**
- * Возвращает флаг, является ли пользователь администратором
+ * Проверяет, является ли пользователь администратором.
+ * @return bool true если пользователь администратор.
  */
 function is_admin(): bool
 {

@@ -3,162 +3,186 @@
  * Обработчик сохранения шаблона из конструктора (AJAX).
  * Принимает JSON
  */
-
 session_start();
+
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth.php';
 require_once __DIR__ . '/core/TemplateService.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Только админ
-try {
-    require_admin();
-} catch (Throwable $e) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Доступ запрещён'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+/**
+ * Валидатор входного JSON шаблона.
+ */
+final class TemplatePayloadValidator
+{
+    /**
+     * Проверяет данные, которые пришли из конструктора шаблона.
+     *
+     * @param array<string, mixed> $data Payload.
+     * @return array{ok:bool, error?:string, name?:string, makeActive?:bool, headers?:array, structure?:array}
+     */
+    public function validate(array $data): array
+    {
+        $name = trim((string)($data['template_name'] ?? ''));
+        $makeActive = !empty($data['make_active']);
+        $headers = $data['headers'] ?? [];
+        $structure = $data['structure'] ?? null;
 
-// Читаем сырое тело запроса
-$raw = file_get_contents('php://input');
-$data = json_decode($raw, true);
+        if ($name === '') {
+            return ['ok' => false, 'error' => 'Название шаблона не может быть пустым.'];
+        }
+        if (!is_array($headers) || count($headers) === 0) {
+            return ['ok' => false, 'error' => 'Должен быть хотя бы один столбец.'];
+        }
+        if (!is_array($structure) || !isset($structure['rows']) || !is_array($structure['rows'])) {
+            return ['ok' => false, 'error' => 'Некорректная структура таблицы.'];
+        }
 
-if (!is_array($data)) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Некорректный формат данных (ожидается JSON).'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+        // Заголовки
+        foreach ($headers as &$h) {
+            if (!is_array($h)) {
+                return ['ok' => false, 'error' => 'Некорректный заголовок столбца.'];
+            }
+            $h['name'] = trim((string)($h['name'] ?? ''));
+            if ($h['name'] === '') {
+                return ['ok' => false, 'error' => 'Имя столбца не может быть пустым.'];
+            }
+            $h['type'] = (($h['type'] ?? 'text') === 'number') ? 'number' : 'text';
+            $h['readonly'] = !empty($h['readonly']);
+        }
+        unset($h);
 
-$name       = trim($data['template_name'] ?? '');
-$makeActive = !empty($data['make_active']);
-$headers    = $data['headers'] ?? [];
-$structure  = $data['structure'] ?? null;
+        // Строки
+        foreach ($structure['rows'] as $row) {
+            if (!is_array($row)) {
+                return ['ok' => false, 'error' => 'Ошибка в шаблоне: одна из строк таблицы записана неправильно.'];
+            }
+            $rowType = (string)($row['rowType'] ?? 'normal');
+            $cells = $row['cells'] ?? [];
 
-// валидация
-if ($name === '') {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Название шаблона не может быть пустым.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+            if (!in_array($rowType, ['normal', 'comment'], true)) {
+                return ['ok' => false, 'error' => 'Некорректный тип строки.'];
+            }
+            if (!is_array($cells)) {
+                return ['ok' => false, 'error' => 'Ошибка в шаблоне: внутри строки таблицы неправильно переданы ячейки.'];
+            }
+        }
 
-if (!is_array($headers) || count($headers) === 0) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Должен быть хотя бы один столбец.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+        // Объединённые ячейки (merges)
+        $merges = $structure['merges'] ?? [];
+        if (!is_array($merges)) {
+            return ['ok' => false, 'error' => 'Некорректная структура объединений ячеек.'];
+        }
 
-if (!is_array($structure) || !isset($structure['rows']) || !is_array($structure['rows'])) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Некорректная структура таблицы.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+        foreach ($merges as $merge) {
+            if (!is_array($merge)) {
+                return ['ok' => false, 'error' => 'Ошибка в объединениях: одно из объединений задано неверно.'];
+            }
+            if (!isset($merge['startRow'], $merge['startCol'])) {
+                return ['ok' => false, 'error' => 'У объединения ячеек должны быть заданы startRow и startCol.'];
+            }
 
-// Проверяем заголовки
-foreach ($headers as &$h) {
-    $h['name'] = trim($h['name'] ?? '');
-    if ($h['name'] === '') {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Имя столбца не может быть пустым.'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-    $h['type'] = ($h['type'] ?? 'text') === 'number' ? 'number' : 'text';
-    $h['readonly'] = !empty($h['readonly']);
-}
-unset($h);
+            $sr = (int)$merge['startRow'];
+            $sc = (int)$merge['startCol'];
+            $rs = isset($merge['rowSpan']) ? (int)$merge['rowSpan'] : 1;
+            $cs = isset($merge['colSpan']) ? (int)$merge['colSpan'] : 1;
 
-// проверка строк
-foreach ($structure['rows'] as $row) {
-    if (!is_array($row)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Ошибка в шаблоне: одна из строк таблицы записана неправильно.'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-    $rowType = $row['rowType'] ?? 'normal';
-    $cells   = $row['cells'] ?? [];
+            if ($sr < 0 || $sc < 0 || $rs < 1 || $cs < 1) {
+                return ['ok' => false, 'error' => 'У объединения ячеек некорректные координаты или размер.'];
+            }
+        }
 
-    if (!in_array($rowType, ['normal', 'comment'], true)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Некорректный тип строки.'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-    if (!is_array($cells)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Ошибка в шаблоне: внутри строки таблицы неправильно переданы ячейки.'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        return [
+            'ok' => true,
+            'name' => $name,
+            'makeActive' => $makeActive,
+            'headers' => $headers,
+            'structure' => $structure,
+        ];
     }
 }
 
-// проверка объединений
-$merges = $structure['merges'] ?? [];
-if (!is_array($merges)) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Некорректная структура объединений ячеек.'
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+/**
+ * Класс, который "принимает запрос" на сохранение шаблона и делает всю работу:
+ *
+ * - Проверяет, что пользователь — админ.
+ * - Читает JSON из запроса (то, что прислал конструктор).
+ * - Проверяет данные через валидатор (TemplatePayloadValidator).
+ * - Если всё нормально — сохраняет шаблон в базе через TemplateService.
+ * - Возвращает ответ JSON: success=true/false и текст сообщения.
+ */
+final class SaveTemplateHandler
+{
+    /** @var TemplateService */
+    private TemplateService $service;
 
-foreach ($merges as $merge) {
-    if (!is_array($merge)) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Ошибка в объединениях: одно из объединений задано неверно.'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+    /** @var TemplatePayloadValidator */
+    private TemplatePayloadValidator $validator;
+
+    /**
+     * @param TemplateService $service Сервис шаблонов.
+     * @param TemplatePayloadValidator $validator Валидатор payload.
+     */
+    public function __construct(TemplateService $service, TemplatePayloadValidator $validator)
+    {
+        $this->service = $service;
+        $this->validator = $validator;
     }
 
-    if (!isset($merge['startRow'], $merge['startCol'])) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'У объединения ячеек должны быть заданы startRow и startCol.'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+    /**
+     * Запускает обработку.
+     *
+     * @param string $rawInput Сырое тело запроса.
+     * @return void
+     */
+    public function handle(string $rawInput): void
+    {
+        try {
+            require_admin();
+        } catch (Throwable $e) {
+            $this->respond(false, 'Доступ запрещён');
+            return;
+        }
+
+        $data = json_decode($rawInput, true);
+        if (!is_array($data)) {
+            $this->respond(false, 'Некорректный формат данных (ожидается JSON).');
+            return;
+        }
+
+        $check = $this->validator->validate($data);
+        if (empty($check['ok'])) {
+            $this->respond(false, (string)($check['error'] ?? 'Ошибка валидации.'));
+            return;
+        }
+
+        try {
+            $newId = $this->service->createTemplate(
+                (string)$check['name'],
+                (array)$check['headers'],
+                (array)$check['structure'],
+                (bool)$check['makeActive']
+            );
+
+            $msg = 'Шаблон успешно сохранён (ID=' . $newId . ')' . (!empty($check['makeActive']) ? ' и сделан активным.' : '');
+            $this->respond(true, $msg);
+        } catch (Throwable $e) {
+            $this->respond(false, 'Ошибка сохранения шаблона: ' . $e->getMessage());
+        }
     }
 
-    $sr = (int)$merge['startRow'];
-    $sc = (int)$merge['startCol'];
-    $rs = isset($merge['rowSpan']) ? (int)$merge['rowSpan'] : 1;
-    $cs = isset($merge['colSpan']) ? (int)$merge['colSpan'] : 1;
-
-    if ($sr < 0 || $sc < 0 || $rs < 1 || $cs < 1) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'У объединения ячеек некорректные координаты или размер.'
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+    /**
+     * Возвращает JSON-ответ.
+     *
+     * @param bool $success Успех.
+     * @param string $message Сообщение.
+     */
+    private function respond(bool $success, string $message): void
+    {
+        echo json_encode(['success' => $success, 'message' => $message], JSON_UNESCAPED_UNICODE);
     }
 }
 
-try {
-    $service = new TemplateService($conn);
-    $newId = $service->createTemplate($name, $headers, $structure, $makeActive);
-
-    echo json_encode([
-        'success' => true,
-        'message' => 'Шаблон успешно сохранён (ID=' . $newId . ')' . ($makeActive ? ' и сделан активным.' : '')
-    ], JSON_UNESCAPED_UNICODE);
-} catch (Throwable $e) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Ошибка сохранения шаблона: ' . $e->getMessage()
-    ], JSON_UNESCAPED_UNICODE);
-}
+$handler = new SaveTemplateHandler(new TemplateService($conn), new TemplatePayloadValidator());
+$handler->handle((string)file_get_contents('php://input'));
