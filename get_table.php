@@ -86,7 +86,7 @@ if (is_array($merges)) {
     <link rel="stylesheet" href="styles.css">
     <script src="script.js" defer></script>
 </head>
-<body>
+<body class="fill-form-page">
 <header>
     <div class="brand">
         <div class="logo">
@@ -128,7 +128,7 @@ if (is_array($merges)) {
                 <!-- Передаём ID активного шаблона скрытым полем -->
                 <input type="hidden" name="template_id" value="<?= (int)$template->getId() ?>">
 
-                <div id="data-table-container">
+                <div class="table-scroll">
                 <table id="data-table">
                     <thead>
                     <tr>

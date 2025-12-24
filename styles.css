@@ -552,3 +552,120 @@ form button:hover {
   box-sizing: border-box;
   resize: vertical;
 }
+
+/* Страница заполнения формы */
+/* Обёртка со скроллом для широкой таблицы */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+}
+
+form { 
+  display: flex;
+  flex-direction: column; 
+  max-width: 500px; 
+}
+
+#data-table input,
+#data-table select,
+#data-table textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 140px;             
+}
+
+/* строка комментария */
+#data-table textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+/* чтобы кнопка "Сохранить" не была узкой */
+#data-form button[type="submit"],
+#data-form .btn {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* страница "Заполнить форму" — растягиваем весь контент на всю ширину */
+
+.fill-form-page #data-form,
+.fill-form-page form {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* секция тоже на всю ширину */
+.fill-form-page main,
+.fill-form-page section {
+  max-width: none;
+  width: 100%;
+}
+
+/* обёртка со скроллом */
+.fill-form-page .table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+}
+
+/* таблица */
+.fill-form-page #data-table {
+  width: 100%;
+  min-width: 1200px;      
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.fill-form-page #data-table th,
+.fill-form-page #data-table td {
+  border: 1px solid rgba(255,255,255,0.25);
+  padding: 10px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.fill-form-page #data-table th {
+  background: #333;
+  color: #fff;
+}
+
+.fill-form-page #data-table input {
+  width: 100%;
+  min-width: 140px;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  color: #fff;
+}
+
+.fill-form-page #data-table input:read-only {
+  background-color: #444;
+  color: #ccc;
+}
+
+.fill-form-page .comment-row textarea {
+  width: 100%;
+  min-height: 90px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+/* кнопка на всю ширину */
+.fill-form-page #saveTableBtn {
+  width: 100%;
+}
+
+/* Общая ширина контента */
+.fill-form-page main {
+  padding-left: 70px;   
+  padding-right: 70px;  
+  box-sizing: border-box;
+}
