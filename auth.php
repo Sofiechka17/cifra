@@ -54,9 +54,24 @@ function require_auth(): void
 function require_admin(): void
 {
     ensure_session_started();
-    if (empty($_SESSION['user_id']) || empty($_SESSION['is_admin'])) {
+    if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'admin') {
         http_response_code(403);
-        die("Доступ запрещён");
+        die("Доступ запрещён. Требуются права администратора.");
+    }
+}
+
+/**
+ * Проверяет, что текущий пользователь — минэк
+ * При отсутствии прав завершает выполнение (die) с HTTP 403.
+ * @return void
+ */
+function require_minec(): void
+{
+    ensure_session_started();
+
+    if (empty($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'minec') {
+        http_response_code(403);
+        die("Доступ только для Минэк");
     }
 }
 
@@ -91,11 +106,16 @@ function current_municipality_name(): ?string
 }
 
 /**
- * Проверяет, является ли пользователь администратором.
- * @return bool true если пользователь администратор.
+ * Проверяет, является ли пользователь администратором/минэком
  */
 function is_admin(): bool
 {
     ensure_session_started();
-    return !empty($_SESSION['is_admin']);
+    return ($_SESSION['role'] ?? '') === 'admin';
+}
+
+function is_minec(): bool
+{
+    ensure_session_started();
+    return ($_SESSION['role'] ?? '') === 'minec';
 }

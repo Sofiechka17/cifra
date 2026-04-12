@@ -3,6 +3,8 @@
  * Обработчик регистрации нового пользователя
  * Принимает POST-данные формы и создаёт запись в таблице users.
  */
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
 session_start();
 include "db.php";
 

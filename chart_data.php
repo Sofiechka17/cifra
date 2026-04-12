@@ -7,10 +7,8 @@ require_once __DIR__ . '/auth.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-// Проверяем права (только админ)
-try {
-    require_admin();
-} catch (Throwable $e) {
+// Проверяем права админа или минэка
+if (!is_admin() && !is_minec()) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Доступ запрещён'], JSON_UNESCAPED_UNICODE);
     exit;

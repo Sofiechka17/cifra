@@ -19,11 +19,9 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
-// Только админ
-try {
-    require_admin();
-} catch (Throwable $e) {
-    die("Доступ запрещён: только администратор может выгружать таблицы.");
+// Админ или минэк
+if (!is_admin() && !is_minec()) {
+    die("Доступ запрещён");
 }
 
 if (empty($_GET["filled_id"])) {
