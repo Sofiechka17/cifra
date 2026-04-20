@@ -9,9 +9,7 @@
  *  - строим таблицу по заголовкам и структуре шаблона;
  *  - отправляем заполненные данные в save_table.php.
  */
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/auth.php';
-require_once __DIR__ . '/core/Template/TemplateService.php';
+require_once __DIR__ . '/bootstrap.php';
 
 require_auth();
 
