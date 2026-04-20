@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async save(payload) {
       const response = await fetch("save_template.php", {
         method: "POST",
-        headers: { "Content-Type": "application/json;charset=utf-8" },
+        headers: { "Content-Type": "application/json;charset=utf-8", "X-CSRF-Token": window.csrfToken || "" },
         body: JSON.stringify(payload)
       });
       return response.json();
