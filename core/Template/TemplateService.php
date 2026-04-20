@@ -187,21 +187,20 @@ class TemplateService
      */
     public function saveFilledData(int $userId, int $templateId, int $municipalityId, array $rows): void
     {
+        $template = $this->getTemplateById($templateId);
+        if (!$template->canBeUsedForFill()) {
+            throw new DomainException('Шаблон недоступен для заполнения.');
+        }
+
         $sql = "INSERT INTO cit_schema.filled_data (user_id, template_id, municipality_id, filled_data)
                 VALUES ($1, $2, $3, $4::jsonb)";
 
         $json = json_encode($rows, JSON_UNESCAPED_UNICODE);
         if ($json === false) {
-            throw new RuntimeException('Не удалось сериализовать данные таблицы в JSON');
+            throw new RuntimeException('Не удалось сериализовать данные таблицы в JSON.');
         }
 
-        $res = pg_query_params($this->conn, $sql, [
-            $userId,
-            $templateId,
-            $municipalityId,
-            $json,
-        ]);
-
+        $res = pg_query_params($this->conn, $sql, [$userId, $templateId, $municipalityId, $json]);
         if (!$res) {
             throw new RuntimeException('Ошибка сохранения данных таблицы: ' . pg_last_error($this->conn));
         }
