@@ -8,224 +8,34 @@
  * - аналитика по заполненным таблицам (Chart.js)
  */
 
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/auth.php';
-require_once __DIR__ . '/core/Template/TemplateService.php';
+require_once __DIR__ . '/bootstrap.php';
 
-require_admin();
-
-/**
- * Репозиторий чтения данных для админ-страницы (SQL запросы).
- */
-final class AdminViewRepository
-{
-    /** @var resource|\PgSql\Connection */
-    private $conn;
-
-    /**
-     * Создаёт репозиторий.
-     *
-     * @param resource|\PgSql\Connection $conn Соединение PostgreSQL.
-     */
-    public function __construct($conn)
-    {
-        $this->conn = $conn;
-    }
-
-    /**
-     * Возвращает все заполненные таблицы (для списка и аналитики).
-     *
-     * @return array<int, array<string, mixed>> Rows.
-     */
-    public function getFilledTables(): array
-    {
-        $sql = "
-            SELECT
-                f.filled_data_id,
-                f.template_id,
-                f.filled_data,
-                u.user_full_name,
-                m.municipality_id,
-                m.municipality_name,
-                t.template_name,
-                f.filled_date
-            FROM cit_schema.filled_data f
-            JOIN cit_schema.users u ON f.user_id = u.user_id
-            JOIN cit_schema.municipalities m ON f.municipality_id = m.municipality_id
-            JOIN cit_schema.table_templates t ON t.template_id = f.template_id
-            ORDER BY f.filled_date DESC
-        ";
-
-        $result = pg_query($this->conn, $sql);
-        if (!$result) {
-            return [];
-        }
-
-        $rows = [];
-        while ($r = pg_fetch_assoc($result)) {
-            $rows[] = $r;
-        }
-        return $rows;
-    }
-
-    /**
-     * Возвращает все заявки обратной связи.
-     *
-     * @return resource|false PostgreSQL result resource or false.
-     */
-    public function getFeedbackResult()
-    {
-        $sql = "
-            SELECT
-                fr.feedback_id,
-                fr.full_name_feedback,
-                fr.phone_feedback,
-                fr.problem_description_feedback
-            FROM cit_schema.feedback_requests fr
-            ORDER BY fr.feedback_id DESC
-        ";
-
-        return pg_query($this->conn, $sql);
-    }
-
-    /**
-     * Возвращает список шаблонов для выпадающего списка.
-     *
-     * @return array<int, array<string, mixed>> Templates list.
-     */
-    public function getTemplatesList(): array
-    {
-        $sql = "
-            SELECT template_id, template_name, is_active
-            FROM cit_schema.table_templates
-            ORDER BY template_id DESC
-        ";
-
-        $res = pg_query($this->conn, $sql);
-        if (!$res) {
-            return [];
-        }
-
-        $list = [];
-        while ($row = pg_fetch_assoc($res)) {
-            $list[] = $row;
-        }
-        return $list;
-    }
-
-    /**
-     * Возвращает список муниципальных образований (МО).
-     *
-     * @return array<int, array<string, mixed>> Municipalities list.
-     */
-    public function getMunicipalitiesList(): array
-    {
-        $sql = "SELECT municipality_id, municipality_name FROM cit_schema.municipalities ORDER BY municipality_name";
-        $res = pg_query($this->conn, $sql);
-        if (!$res) {
-            return [];
-        }
-
-        $list = [];
-        while ($mo = pg_fetch_assoc($res)) {
-            $list[] = $mo;
-        }
-        return $list;
-    }
-}
-
-/**
- * Сборка данных (view-model) для admin_view.php.
- */
-final class AdminViewPage
-{
-    /** @var TemplateService */
-    private TemplateService $templateService;
-
-    /** @var AdminViewRepository */
-    private AdminViewRepository $repo;
-
-    /**
-     * Создаёт страницу.
-     *
-     * @param TemplateService $templateService Сервис шаблонов.
-     * @param AdminViewRepository $repo Репозиторий данных.
-     */
-    public function __construct(TemplateService $templateService, AdminViewRepository $repo)
-    {
-        $this->templateService = $templateService;
-        $this->repo = $repo;
-    }
-
-    /**
-     * Загружает шаблон по template_id из GET .
-     *
-     * @param array<string, mixed> $query GET-параметры.
-     * @return array<string, mixed>|null DTO для JS или null.
-     */
-    public function loadTemplateForJs(array $query): ?array
-    {
-        if (empty($query['template_id'])) {
-            return null;
-        }
-
-        $tplId = (int)$query['template_id'];
-        if ($tplId <= 0) {
-            return null;
-        }
-
-        try {
-            $templateObj = $this->templateService->getTemplateById($tplId);
-            if (!$templateObj) {
-                return null;
-            }
-
-            return [
-                'headers' => $templateObj->getHeaders(),
-                'structure' => $templateObj->getStructure(),
-                'template_name' => $templateObj->getName(),
-                'template_id' => $templateObj->getId(),
-            ];
-        } catch (Throwable $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Собирает все данные, необходимые для рендера страницы.
-     *
-     * @param array<string, mixed> $query GET-параметры.
-     * @return array<string, mixed> ViewModel.
-     */
-    public function buildViewModel(array $query): array
-    {
-        $filledRows = $this->repo->getFilledTables();
-        $feedbackResult = $this->repo->getFeedbackResult();
-        $templatesList = $this->repo->getTemplatesList();
-        $municipalitiesList = $this->repo->getMunicipalitiesList();
-        $loadedTemplateArray = $this->loadTemplateForJs($query);
-
-        return [
-            'filledRowsForJs' => $filledRows,
-            'feedbackResult' => $feedbackResult,
-            'templatesList' => $templatesList,
-            'municipalitiesList' => $municipalitiesList,
-            'loadedTemplateArray' => $loadedTemplateArray,
-        ];
-    }
-}
+(new SessionGuard())->requireAdmin();
 
 $service = new TemplateService($conn);
 $repo = new AdminViewRepository($conn);
-$page = new AdminViewPage($service, $repo);
+$feedbackRepo = new FeedbackRepository($conn);
 
-$vm = $page->buildViewModel($_GET);
+$filledRowsForJs = $repo->getFilledTables();
+$templatesList = $repo->getTemplatesList();
+$municipalitiesList = $repo->getMunicipalitiesList();
+$feedbackRows = $feedbackRepo->listAll();
 
-$filledRowsForJs = $vm['filledRowsForJs'];
-$feedbackResult = $vm['feedbackResult'];
-$templatesList = $vm['templatesList'];
-$municipalitiesList = $vm['municipalitiesList'];
-$loadedTemplateArray = $vm['loadedTemplateArray'];
+$loadedTemplateArray = null;
+if (!empty($_GET['template_id'])) {
+    $tplId = (int)$_GET['template_id'];
+    if ($tplId > 0) {
+        $tpl = $service->getTemplateById($tplId);
+        if ($tpl->getId() !== 0) {
+            $loadedTemplateArray = [
+                'headers' => $tpl->getHeaders(),
+                'structure' => $tpl->getStructure(),
+                'template_name' => $tpl->getName(),
+                'template_id' => $tpl->getId(),
+            ];
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -239,9 +49,10 @@ $loadedTemplateArray = $vm['loadedTemplateArray'];
 
     <!-- Передаём в JS загруженный из БД шаблон (если есть) -->
     <script>
-        window.initialTemplate = <?= $loadedTemplateArray ? json_encode($loadedTemplateArray, JSON_UNESCAPED_UNICODE) : 'null'; ?>;
-        window.municipalitiesList = <?= json_encode($municipalitiesList, JSON_UNESCAPED_UNICODE) ?>;
-        window.filledRowsForJs = <?= json_encode($filledRowsForJs, JSON_UNESCAPED_UNICODE) ?>;
+        window.initialTemplate = <?= $loadedTemplateArray ? json_encode($loadedTemplateArray, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) : 'null' ?>;
+        window.municipalitiesList = <?= json_encode($municipalitiesList, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+        window.filledRowsForJs = <?= json_encode($filledRowsForJs, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+        window.csrfToken = <?= json_encode(Csrf::token()) ?>;
     </script>
 
     <script src="constructor.js" defer></script>
@@ -288,15 +99,15 @@ $loadedTemplateArray = $vm['loadedTemplateArray'];
         <th>Текст обращения</th>
     </tr>
 
-    <?php if ($feedbackResult): ?>
-        <?php while ($fb = pg_fetch_assoc($feedbackResult)): ?>
+    <?php if (!empty($feedbackRows)): ?>
+        <?php foreach ($feedbackRows as $fb): ?>
             <tr>
-                <td><?= htmlspecialchars((string)$fb["feedback_id"]) ?></td>
-                <td><?= htmlspecialchars((string)$fb["full_name_feedback"]) ?></td>
-                <td><?= htmlspecialchars((string)$fb["phone_feedback"]) ?></td>
-                <td><?= nl2br(htmlspecialchars((string)$fb["problem_description_feedback"])) ?></td>
+                <td><?= htmlspecialchars((string)$fb['feedback_id']) ?></td>
+                <td><?= htmlspecialchars((string)$fb['full_name_feedback']) ?></td>
+                <td><?= htmlspecialchars((string)$fb['phone_feedback']) ?></td>
+                <td><?= nl2br(htmlspecialchars((string)$fb['problem_description_feedback'])) ?></td>
             </tr>
-        <?php endwhile; ?>
+        <?php endforeach; ?>
     <?php else: ?>
         <tr><td colspan="4">Нет данных обратной связи</td></tr>
     <?php endif; ?>
