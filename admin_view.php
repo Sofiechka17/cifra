@@ -10,7 +10,7 @@
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/auth.php';
-require_once __DIR__ . '/core/TemplateService.php';
+require_once __DIR__ . '/core/Template/TemplateService.php';
 
 require_admin();
 

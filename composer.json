@@ -1,5 +1,8 @@
 {
     "require": {
         "phpoffice/phpspreadsheet": "^5.1"
+    },
+    "autoload": {
+        "classmap": ["core/"]
     }
 }
