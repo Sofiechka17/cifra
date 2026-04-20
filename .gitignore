@@ -1,0 +1,6 @@
+.worktrees/
+vendor/
+.idea/
+.vscode/*
+!.vscode/settings.json
+*.log
