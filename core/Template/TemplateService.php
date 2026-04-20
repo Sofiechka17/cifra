@@ -45,7 +45,7 @@ class TemplateService
 
         $res = pg_query($this->conn, $sql);
         if (!$res || pg_num_rows($res) === 0) {
-            return Template::createEmpty();
+            return Template::notFound();
         }
 
         $row = pg_fetch_assoc($res);
@@ -79,7 +79,7 @@ class TemplateService
 
         $res = pg_query_params($this->conn, $sql, [$templateId]);
         if (!$res || pg_num_rows($res) === 0) {
-            return Template::createEmpty();
+            return Template::notFound();
         }
 
         $row = pg_fetch_assoc($res);

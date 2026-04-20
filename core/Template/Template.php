@@ -58,6 +58,14 @@ class Template
     }
 
     /**
+     * Null-object для «шаблон не найден». Рекомендуемое имя.
+     */
+    public static function notFound(): Template
+    {
+        return self::createEmpty();
+    }
+
+    /**
      * Возвращает ID шаблона.
      *
      * @return int ID шаблона.
