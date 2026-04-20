@@ -163,15 +163,17 @@ require_once __DIR__ . '/bootstrap.php';
     </div>
 </div>
 
-<!-- JS для обработки клика по кружку МО -->
+<!-- Скрытая форма выхода + JS -->
+<form id="logoutForm" method="POST" action="logout.php" style="display:none;">
+    <?= Csrf::input() ?>
+</form>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const userCircle = document.getElementById('userCircle');
     if (userCircle) {
         userCircle.addEventListener('click', function () {
-            const wantsLogout = confirm('Вы хотите выйти из личного кабинета?');
-            if (wantsLogout) {
-                window.location.href = 'logout.php';
+            if (confirm('Вы хотите выйти из личного кабинета?')) {
+                document.getElementById('logoutForm').submit();
             }
         });
     }
