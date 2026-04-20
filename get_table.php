@@ -153,6 +153,7 @@ $skipCells = $vm['skipCells'];
     <meta charset="UTF-8">
     <title>Заполнение таблицы — ИССД</title>
     <link rel="stylesheet" href="styles.css">
+    <script>window.csrfToken = <?= json_encode(Csrf::token()) ?>;</script>
     <script src="script.js" defer></script>
 </head>
 
@@ -192,6 +193,7 @@ $skipCells = $vm['skipCells'];
             </p>
 
             <form id="data-form" method="post" action="save_table.php">
+                <?= Csrf::input() ?>
                 <input type="hidden" name="template_id" value="<?= (int)$template->getId() ?>">
 
                 <div class="table-scroll">
@@ -355,7 +357,7 @@ class FillFormSubmitter {
             const res = await fetch(this.form.action || "save_table.php", {
                 method: "POST",
                 body: formData,
-                headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json" }
+                headers: { "X-Requested-With": "XMLHttpRequest", "Accept": "application/json", "X-CSRF-Token": window.csrfToken || "" }
             });
 
             const contentType = res.headers.get("content-type") || "";
