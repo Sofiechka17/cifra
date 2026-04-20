@@ -106,23 +106,40 @@ class TemplateService
      */
     public function createTemplate(string $name, array $headers, array $structure, bool $makeActive = false): int
     {
-        $sql = "INSERT INTO cit_schema.table_templates (template_name, template_headers, template_structure, is_active)
-                VALUES ($1, $2::jsonb, $3::jsonb, $4)
-                RETURNING template_id";
+        pg_query($this->conn, 'BEGIN');
+        try {
+            if ($makeActive) {
+                $deactivate = "UPDATE cit_schema.table_templates SET is_active = FALSE WHERE is_active = TRUE";
+                if (!pg_query($this->conn, $deactivate)) {
+                    throw new RuntimeException('Ошибка деактивации прежнего шаблона: ' . pg_last_error($this->conn));
+                }
+            }
 
-        $res = pg_query_params($this->conn, $sql, [
-            $name,
-            json_encode($headers, JSON_UNESCAPED_UNICODE),
-            json_encode($structure, JSON_UNESCAPED_UNICODE),
-            $makeActive ? 't' : 'f',
-        ]);
+            $sql = "INSERT INTO cit_schema.table_templates
+                        (template_name, template_headers, template_structure, is_active)
+                    VALUES ($1, $2::jsonb, $3::jsonb, $4)
+                    RETURNING template_id";
 
-        if (!$res) {
-            throw new RuntimeException('Ошибка создания шаблона: ' . pg_last_error($this->conn));
+            $res = pg_query_params($this->conn, $sql, [
+                $name,
+                json_encode($headers, JSON_UNESCAPED_UNICODE),
+                json_encode($structure, JSON_UNESCAPED_UNICODE),
+                $makeActive ? 't' : 'f',
+            ]);
+
+            if (!$res) {
+                throw new RuntimeException('Ошибка создания шаблона: ' . pg_last_error($this->conn));
+            }
+
+            $row = pg_fetch_assoc($res);
+            $newId = (int)$row['template_id'];
+
+            pg_query($this->conn, 'COMMIT');
+            return $newId;
+        } catch (Throwable $e) {
+            pg_query($this->conn, 'ROLLBACK');
+            throw $e;
         }
-
-        $row = pg_fetch_assoc($res);
-        return (int)$row['template_id'];
     }
 
     /**
