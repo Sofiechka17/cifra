@@ -7,8 +7,7 @@
  *  - форма обратной связи;
  *  - модальное окно регистрации и авторизации пользователя.
  */
-session_start();
-include "db.php";
+require_once __DIR__ . '/bootstrap.php';
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -20,6 +19,7 @@ include "db.php";
     <script src="script.js" defer></script>
 </head>
 <body>
+<script>window.csrfToken = <?= json_encode(Csrf::token()) ?>;</script>
 <header>
     <div class="brand">
         <div class="logo">
@@ -72,6 +72,7 @@ include "db.php";
     <section id="feedback-form">
         <h2>Оставить заявку</h2>
         <form id="feedbackForm" method="POST">
+            <?= Csrf::input() ?>
             <label for="full-name">ФИО:</label>
             <input type="text" id="full-name" name="full-name" required>
 
@@ -100,6 +101,7 @@ include "db.php";
 
         <div class="form-wrapper" id="signUpForm">
             <form action="register.php" method="POST">
+                <?= Csrf::input() ?>
                 <h2>Регистрация</h2>
                 <label for="reg-fullname">ФИО:</label>
                 <input type="text" id="reg-fullname" name="fullname" required>
@@ -144,6 +146,7 @@ include "db.php";
 
         <div class="form-wrapper" id="signInForm" style="display:none;">
             <form action="login.php" method="POST">
+                <?= Csrf::input() ?>
                 <h2>Авторизация</h2>
                 <label for="login-username">Логин:</label>
                 <input type="text" id="login-username" name="username" required>
