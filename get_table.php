@@ -149,31 +149,35 @@ $skipCells = $vm['skipCells'];
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Заполнение таблицы — ИССД</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="styles.css">
     <script>window.csrfToken = <?= json_encode(Csrf::token()) ?>;</script>
     <script src="script.js" defer></script>
 </head>
 
 <body class="fill-form-page">
-<header>
-    <div class="brand">
-        <div class="logo">
-            <img src="default-logo_w152_fitted.webp" alt="Логотип" style="width:30%; height:100%; object-fit:contain;">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background:#000; padding:15px 30px;">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="index.php">
+            <img src="default-logo_w152_fitted.webp" alt="Логотип" height="40" style="object-fit:contain;">
+            <span class="fw-bold text-white fs-6">Информационная система сбора данных</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarFill">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarFill">
+            <ul class="navbar-nav mx-auto gap-3">
+                <li class="nav-item"><a class="nav-link" href="index.php">Главная</a></li>
+                <li class="nav-item"><a class="nav-link" href="get_table.php">Заполнить форму</a></li>
+            </ul>
+            <div class="ms-lg-3 mt-2 mt-lg-0">
+                <span class="user-municipality text-white"><?= htmlspecialchars($municipalityName) ?></span>
+            </div>
         </div>
-        <span class="system-name">Информационная система сбора данных</span>
     </div>
-
-    <nav class="centered-nav">
-        <div class="nav-links">
-            <a href="index.php">Главная</a>
-            <a href="get_table.php">Заполнить форму</a>
-        </div>
-        <div class="user-municipality">
-            <?= htmlspecialchars($municipalityName) ?>
-        </div>
-    </nav>
-</header>
+</nav>
 
 <main>
     <section>
@@ -382,5 +386,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

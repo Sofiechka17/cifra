@@ -35,7 +35,9 @@ if (!empty($_GET['template_id'])) {
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Минэк - отчеты и диаграммы</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="styles.css">
 
     <!-- Chart.js -->
@@ -54,8 +56,11 @@ if (!empty($_GET['template_id'])) {
 
 <body class="admin-body">
 
+<div class="container-fluid p-3 p-md-4">
+
 <h2>Заполненные таблицы</h2>
-<table>
+<div class="table-responsive">
+<table class="table table-dark table-bordered table-sm">
     <tr>
         <th>ID</th>
         <th>Пользователь</th>
@@ -83,6 +88,7 @@ if (!empty($_GET['template_id'])) {
         <tr><td colspan="5">Нет заполненных таблиц</td></tr>
     <?php endif; ?>
 </table>
+</div>
 
 <!-- Блок диаграммы -->
 <hr style="margin:30px 0;">
@@ -91,21 +97,21 @@ if (!empty($_GET['template_id'])) {
 <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center; margin-bottom:15px;">
     <label>
         МО:
-        <select id="moSelect" style="min-width:260px;">
+        <select class="form-select" id="moSelect" style="min-width:260px;">
             <option value="">-- выберите МО --</option>
         </select>
     </label>
 
     <label>
         Заполненная таблица:
-        <select id="filledSelect" style="min-width:360px;" disabled>
+        <select class="form-select" id="filledSelect" style="min-width:360px;" disabled>
             <option value="">-- сначала выберите МО --</option>
         </select>
     </label>
 
     <label>
         Показатель:
-        <select id="indicatorSelect" style="min-width:360px;" disabled>
+        <select class="form-select" id="indicatorSelect" style="min-width:360px;" disabled>
             <option value="">-- сначала выберите таблицу --</option>
         </select>
     </label>
@@ -378,5 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

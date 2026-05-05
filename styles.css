@@ -665,7 +665,84 @@ form {
 
 /* Общая ширина контента */
 .fill-form-page main {
-  padding-left: 70px;   
-  padding-right: 70px;  
+  padding-left: 70px;
+  padding-right: 70px;
   box-sizing: border-box;
+}
+
+/* ===== Bootstrap overrides (dark theme) ===== */
+
+/* Таблицы в Bootstrap dark — граница ярче */
+.table-dark th,
+.table-dark td {
+    border-color: #555 !important;
+}
+
+/* Bootstrap form-control в тёмной теме */
+.form-control,
+.form-select {
+    background-color: #222;
+    color: #fff;
+    border-color: #555;
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: #333;
+    color: #fff;
+    border-color: #FF5500;
+    box-shadow: 0 0 0 0.2rem rgba(255,85,0,0.25);
+}
+
+/* Опции в select */
+.form-select option {
+    background-color: #222;
+    color: #fff;
+}
+
+/* Bootstrap navbar toggler в тёмной теме — иконка видна */
+.navbar-toggler {
+    border-color: rgba(255,255,255,0.4);
+}
+
+/* ===== Responsive breakpoints ===== */
+
+@media (max-width: 992px) {
+    header {
+        padding: 15px 20px;
+    }
+
+    .nav-links {
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    main {
+        padding: 20px 15px;
+    }
+
+    .fill-form-page main {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+
+    .modal-content {
+        width: 95% !important;
+        max-width: 460px;
+    }
+
+    .admin-body {
+        margin: 10px;
+    }
+}
+
+@media (max-width: 576px) {
+    .system-name {
+        font-size: 13px;
+    }
+
+    section h2 {
+        font-size: 20px;
+    }
 }
