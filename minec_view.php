@@ -2,234 +2,42 @@
 /**
  * Страница пользователя минэк
  * Отображает:
- * - список заполненных пользователями таблиц с возможностью выгрузки в Excel
+ * - список заполненных пользователями таблицами с возможностью выгрузки в Excel
  * - аналитика по заполненным таблицам (Chart.js)
  */
 
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/auth.php';
-require_once __DIR__ . '/core/TemplateService.php';
+require_once __DIR__ . '/bootstrap.php';
 
-require_minec();
+(new SessionGuard())->requireMinec();
 
-/**
- * Репозиторий чтения данных для админ-страницы (SQL запросы).
- */
-final class AdminViewRepository
-{
-    /** @var resource|\PgSql\Connection */
-    private $conn;
-
-    /**
-     * Создаёт репозиторий.
-     *
-     * @param resource|\PgSql\Connection $conn Соединение PostgreSQL.
-     */
-    public function __construct($conn)
-    {
-        $this->conn = $conn;
-    }
-
-    /**
-     * Возвращает все заполненные таблицы (для списка и аналитики).
-     *
-     * @return array<int, array<string, mixed>> Rows.
-     */
-    public function getFilledTables(): array
-    {
-        $sql = "
-            SELECT
-                f.filled_data_id,
-                f.template_id,
-                f.filled_data,
-                u.user_full_name,
-                m.municipality_id,
-                m.municipality_name,
-                t.template_name,
-                f.filled_date
-            FROM cit_schema.filled_data f
-            JOIN cit_schema.users u ON f.user_id = u.user_id
-            JOIN cit_schema.municipalities m ON f.municipality_id = m.municipality_id
-            JOIN cit_schema.table_templates t ON t.template_id = f.template_id
-            ORDER BY f.filled_date DESC
-        ";
-
-        $result = pg_query($this->conn, $sql);
-        if (!$result) {
-            return [];
-        }
-
-        $rows = [];
-        while ($r = pg_fetch_assoc($result)) {
-            $rows[] = $r;
-        }
-        return $rows;
-    }
-
-    /**
-     * Возвращает все заявки обратной связи.
-     *
-     * @return resource|false PostgreSQL result resource or false.
-     */
-    public function getFeedbackResult()
-    {
-        $sql = "
-            SELECT
-                fr.feedback_id,
-                fr.full_name_feedback,
-                fr.phone_feedback,
-                fr.problem_description_feedback
-            FROM cit_schema.feedback_requests fr
-            ORDER BY fr.feedback_id DESC
-        ";
-
-        return pg_query($this->conn, $sql);
-    }
-
-    /**
-     * Возвращает список шаблонов для выпадающего списка.
-     *
-     * @return array<int, array<string, mixed>> Templates list.
-     */
-    public function getTemplatesList(): array
-    {
-        $sql = "
-            SELECT template_id, template_name, is_active
-            FROM cit_schema.table_templates
-            ORDER BY template_id DESC
-        ";
-
-        $res = pg_query($this->conn, $sql);
-        if (!$res) {
-            return [];
-        }
-
-        $list = [];
-        while ($row = pg_fetch_assoc($res)) {
-            $list[] = $row;
-        }
-        return $list;
-    }
-
-    /**
-     * Возвращает список муниципальных образований (МО).
-     *
-     * @return array<int, array<string, mixed>> Municipalities list.
-     */
-    public function getMunicipalitiesList(): array
-    {
-        $sql = "SELECT municipality_id, municipality_name FROM cit_schema.municipalities ORDER BY municipality_name";
-        $res = pg_query($this->conn, $sql);
-        if (!$res) {
-            return [];
-        }
-
-        $list = [];
-        while ($mo = pg_fetch_assoc($res)) {
-            $list[] = $mo;
-        }
-        return $list;
-    }
-}
-
-/**
- * Сборка данных (view-model) для admin_view.php.
- */
-final class AdminViewPage
-{
-    /** @var TemplateService */
-    private TemplateService $templateService;
-
-    /** @var AdminViewRepository */
-    private AdminViewRepository $repo;
-
-    /**
-     * Создаёт страницу.
-     *
-     * @param TemplateService $templateService Сервис шаблонов.
-     * @param AdminViewRepository $repo Репозиторий данных.
-     */
-    public function __construct(TemplateService $templateService, AdminViewRepository $repo)
-    {
-        $this->templateService = $templateService;
-        $this->repo = $repo;
-    }
-
-    /**
-     * Загружает шаблон по template_id из GET .
-     *
-     * @param array<string, mixed> $query GET-параметры.
-     * @return array<string, mixed>|null DTO для JS или null.
-     */
-    public function loadTemplateForJs(array $query): ?array
-    {
-        if (empty($query['template_id'])) {
-            return null;
-        }
-
-        $tplId = (int)$query['template_id'];
-        if ($tplId <= 0) {
-            return null;
-        }
-
-        try {
-            $templateObj = $this->templateService->getTemplateById($tplId);
-            if (!$templateObj) {
-                return null;
-            }
-
-            return [
-                'headers' => $templateObj->getHeaders(),
-                'structure' => $templateObj->getStructure(),
-                'template_name' => $templateObj->getName(),
-                'template_id' => $templateObj->getId(),
-            ];
-        } catch (Throwable $e) {
-            return null;
-        }
-    }
-
-    /**
-     * Собирает все данные, необходимые для рендера страницы.
-     *
-     * @param array<string, mixed> $query GET-параметры.
-     * @return array<string, mixed> ViewModel.
-     */
-    public function buildViewModel(array $query): array
-    {
-        $filledRows = $this->repo->getFilledTables();
-        $feedbackResult = $this->repo->getFeedbackResult();
-        $templatesList = $this->repo->getTemplatesList();
-        $municipalitiesList = $this->repo->getMunicipalitiesList();
-        $loadedTemplateArray = $this->loadTemplateForJs($query);
-
-        return [
-            'filledRowsForJs' => $filledRows,
-            'feedbackResult' => $feedbackResult,
-            'templatesList' => $templatesList,
-            'municipalitiesList' => $municipalitiesList,
-            'loadedTemplateArray' => $loadedTemplateArray,
-        ];
-    }
-}
-
-$service = new TemplateService($conn);
 $repo = new AdminViewRepository($conn);
-$page = new AdminViewPage($service, $repo);
+$filledRowsForJs = $repo->getFilledTables();
+$municipalitiesList = $repo->getMunicipalitiesList();
 
-$vm = $page->buildViewModel($_GET);
-
-$filledRowsForJs = $vm['filledRowsForJs'];
-$feedbackResult = $vm['feedbackResult'];
-$templatesList = $vm['templatesList'];
-$municipalitiesList = $vm['municipalitiesList'];
-$loadedTemplateArray = $vm['loadedTemplateArray'];
+$loadedTemplateArray = null;
+if (!empty($_GET['template_id'])) {
+    $tplId = (int)$_GET['template_id'];
+    if ($tplId > 0) {
+        $service = new TemplateService($conn);
+        $tpl = $service->getTemplateById($tplId);
+        if ($tpl->getId() !== 0) {
+            $loadedTemplateArray = [
+                'headers'       => $tpl->getHeaders(),
+                'structure'     => $tpl->getStructure(),
+                'template_name' => $tpl->getName(),
+                'template_id'   => $tpl->getId(),
+            ];
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Минэк - отчеты и диаграммы</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="styles.css">
 
     <!-- Chart.js -->
@@ -237,9 +45,10 @@ $loadedTemplateArray = $vm['loadedTemplateArray'];
 
     <!-- Передаём в JS загруженный из БД шаблон (если есть) -->
     <script>
-        window.initialTemplate = <?= $loadedTemplateArray ? json_encode($loadedTemplateArray, JSON_UNESCAPED_UNICODE) : 'null'; ?>;
-        window.municipalitiesList = <?= json_encode($municipalitiesList, JSON_UNESCAPED_UNICODE) ?>;
-        window.filledRowsForJs = <?= json_encode($filledRowsForJs, JSON_UNESCAPED_UNICODE) ?>;
+        window.initialTemplate = <?= $loadedTemplateArray ? json_encode($loadedTemplateArray, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) : 'null'; ?>;
+        window.municipalitiesList = <?= json_encode($municipalitiesList, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+        window.filledRowsForJs = <?= json_encode($filledRowsForJs, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+        window.csrfToken = <?= json_encode(Csrf::token()) ?>;
     </script>
 
     <script src="constructor.js" defer></script>
@@ -247,8 +56,11 @@ $loadedTemplateArray = $vm['loadedTemplateArray'];
 
 <body class="admin-body">
 
+<div class="container-fluid p-3 p-md-4">
+
 <h2>Заполненные таблицы</h2>
-<table>
+<div class="table-responsive">
+<table class="table table-dark table-bordered table-sm">
     <tr>
         <th>ID</th>
         <th>Пользователь</th>
@@ -276,6 +88,7 @@ $loadedTemplateArray = $vm['loadedTemplateArray'];
         <tr><td colspan="5">Нет заполненных таблиц</td></tr>
     <?php endif; ?>
 </table>
+</div>
 
 <!-- Блок диаграммы -->
 <hr style="margin:30px 0;">
@@ -284,21 +97,21 @@ $loadedTemplateArray = $vm['loadedTemplateArray'];
 <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:center; margin-bottom:15px;">
     <label>
         МО:
-        <select id="moSelect" style="min-width:260px;">
+        <select class="form-select" id="moSelect" style="min-width:260px;">
             <option value="">-- выберите МО --</option>
         </select>
     </label>
 
     <label>
         Заполненная таблица:
-        <select id="filledSelect" style="min-width:360px;" disabled>
+        <select class="form-select" id="filledSelect" style="min-width:360px;" disabled>
             <option value="">-- сначала выберите МО --</option>
         </select>
     </label>
 
     <label>
         Показатель:
-        <select id="indicatorSelect" style="min-width:360px;" disabled>
+        <select class="form-select" id="indicatorSelect" style="min-width:360px;" disabled>
             <option value="">-- сначала выберите таблицу --</option>
         </select>
     </label>
@@ -571,5 +384,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

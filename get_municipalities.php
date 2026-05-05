@@ -1,18 +1,20 @@
 <?php
-/**
- * Возвращает список МО для выпадающего списка 
- */
-$conn = pg_connect("host=localhost port=5432 dbname=postgres user=postgres password=postgres");
-if (!$conn) { die("Ошибка подключения к базе данных."); }
 
-$result = pg_query($conn, "SELECT municipality_id, municipality_name FROM cit_schema.municipalities ORDER BY municipality_name");
-if ($result) {
-    while ($row = pg_fetch_assoc($result)) {
-        echo "<option value='" . htmlspecialchars($row['municipality_id'], ENT_QUOTES) . "'>" . htmlspecialchars($row['municipality_name'], ENT_QUOTES) . "</option>";
-    }
-} else {
-    echo "<option disabled>Ошибка загрузки данных</option>";
+require_once __DIR__ . '/bootstrap.php';
+
+(new SessionGuard())->requireAuth();
+
+header('Content-Type: application/json; charset=utf-8');
+
+$res = pg_query($conn, 'SELECT municipality_id, municipality_name FROM cit_schema.municipalities ORDER BY municipality_name');
+if (!$res) {
+    JsonResponse::error(500, 'Ошибка загрузки данных.');
+    exit;
 }
 
-pg_close($conn);
-?>
+$list = [];
+while ($row = pg_fetch_assoc($res)) {
+    $list[] = ['id' => (int)$row['municipality_id'], 'name' => $row['municipality_name']];
+}
+
+JsonResponse::success('', ['municipalities' => $list]);

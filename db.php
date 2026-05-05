@@ -2,11 +2,11 @@
 /** 
  * Подключение к базе данных PostgreSQL
  */
-$host = "localhost"; 
-$port = "5432";
-$dbname = "postgres"; 
-$user = "postgres";   
-$password = "postgres"; 
+$host = getenv("DB_HOST") ?: "localhost";
+$port = getenv("DB_PORT") ?: "5432";
+$dbname = getenv("DB_NAME") ?: "postgres";
+$user = getenv("DB_USER") ?: "postgres";
+$password = getenv("DB_PASSWORD") ?: "postgres";
 
 $conn = pg_connect("host=$host port=$port dbname=$dbname user=$user password=$password");
 

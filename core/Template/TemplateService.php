@@ -45,7 +45,7 @@ class TemplateService
 
         $res = pg_query($this->conn, $sql);
         if (!$res || pg_num_rows($res) === 0) {
-            return Template::createEmpty();
+            return Template::notFound();
         }
 
         $row = pg_fetch_assoc($res);
@@ -79,7 +79,7 @@ class TemplateService
 
         $res = pg_query_params($this->conn, $sql, [$templateId]);
         if (!$res || pg_num_rows($res) === 0) {
-            return Template::createEmpty();
+            return Template::notFound();
         }
 
         $row = pg_fetch_assoc($res);
@@ -106,23 +106,40 @@ class TemplateService
      */
     public function createTemplate(string $name, array $headers, array $structure, bool $makeActive = false): int
     {
-        $sql = "INSERT INTO cit_schema.table_templates (template_name, template_headers, template_structure, is_active)
-                VALUES ($1, $2::jsonb, $3::jsonb, $4)
-                RETURNING template_id";
+        pg_query($this->conn, 'BEGIN');
+        try {
+            if ($makeActive) {
+                $deactivate = "UPDATE cit_schema.table_templates SET is_active = FALSE WHERE is_active = TRUE";
+                if (!pg_query($this->conn, $deactivate)) {
+                    throw new RuntimeException('Ошибка деактивации прежнего шаблона: ' . pg_last_error($this->conn));
+                }
+            }
 
-        $res = pg_query_params($this->conn, $sql, [
-            $name,
-            json_encode($headers, JSON_UNESCAPED_UNICODE),
-            json_encode($structure, JSON_UNESCAPED_UNICODE),
-            $makeActive ? 't' : 'f',
-        ]);
+            $sql = "INSERT INTO cit_schema.table_templates
+                        (template_name, template_headers, template_structure, is_active)
+                    VALUES ($1, $2::jsonb, $3::jsonb, $4)
+                    RETURNING template_id";
 
-        if (!$res) {
-            throw new RuntimeException('Ошибка создания шаблона: ' . pg_last_error($this->conn));
+            $res = pg_query_params($this->conn, $sql, [
+                $name,
+                json_encode($headers, JSON_UNESCAPED_UNICODE),
+                json_encode($structure, JSON_UNESCAPED_UNICODE),
+                $makeActive ? 't' : 'f',
+            ]);
+
+            if (!$res) {
+                throw new RuntimeException('Ошибка создания шаблона: ' . pg_last_error($this->conn));
+            }
+
+            $row = pg_fetch_assoc($res);
+            $newId = (int)$row['template_id'];
+
+            pg_query($this->conn, 'COMMIT');
+            return $newId;
+        } catch (Throwable $e) {
+            pg_query($this->conn, 'ROLLBACK');
+            throw $e;
         }
-
-        $row = pg_fetch_assoc($res);
-        return (int)$row['template_id'];
     }
 
     /**
@@ -170,21 +187,20 @@ class TemplateService
      */
     public function saveFilledData(int $userId, int $templateId, int $municipalityId, array $rows): void
     {
+        $template = $this->getTemplateById($templateId);
+        if (!$template->canBeUsedForFill()) {
+            throw new DomainException('Шаблон недоступен для заполнения.');
+        }
+
         $sql = "INSERT INTO cit_schema.filled_data (user_id, template_id, municipality_id, filled_data)
                 VALUES ($1, $2, $3, $4::jsonb)";
 
         $json = json_encode($rows, JSON_UNESCAPED_UNICODE);
         if ($json === false) {
-            throw new RuntimeException('Не удалось сериализовать данные таблицы в JSON');
+            throw new RuntimeException('Не удалось сериализовать данные таблицы в JSON.');
         }
 
-        $res = pg_query_params($this->conn, $sql, [
-            $userId,
-            $templateId,
-            $municipalityId,
-            $json,
-        ]);
-
+        $res = pg_query_params($this->conn, $sql, [$userId, $templateId, $municipalityId, $json]);
         if (!$res) {
             throw new RuntimeException('Ошибка сохранения данных таблицы: ' . pg_last_error($this->conn));
         }

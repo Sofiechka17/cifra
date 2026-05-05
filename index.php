@@ -7,44 +7,48 @@
  *  - форма обратной связи;
  *  - модальное окно регистрации и авторизации пользователя.
  */
-session_start();
-include "db.php";
+require_once __DIR__ . '/bootstrap.php';
 ?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Информационная система сбора данных</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="styles.css">
     <script src="https://api-maps.yandex.ru/2.1/?lang=ru_RU" defer></script>
     <script src="script.js" defer></script>
 </head>
 <body>
-<header>
-    <div class="brand">
-        <div class="logo">
-            <img src="default-logo_w152_fitted.webp" alt="Логотип" style="width:30%; height:100%; object-fit:contain;">
+<script>window.csrfToken = <?= json_encode(Csrf::token()) ?>;</script>
+<nav class="navbar navbar-expand-lg navbar-dark" style="background:#000; padding:15px 30px;">
+    <div class="container-fluid">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+            <img src="default-logo_w152_fitted.webp" alt="Логотип" height="40" style="object-fit:contain;">
+            <span class="fw-bold text-white fs-6">Информационная система сбора данных</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarMain">
+            <ul class="navbar-nav mx-auto gap-3">
+                <li class="nav-item"><a class="nav-link" href="#about">Главная</a></li>
+                <li class="nav-item"><a class="nav-link" href="#contacts">Контакты</a></li>
+                <li class="nav-item"><a class="nav-link" href="#feedback-form">Обратная связь</a></li>
+                <li class="nav-item"><a class="nav-link" href="get_table.php">Заполнить форму</a></li>
+            </ul>
+            <div class="ms-lg-3 mt-2 mt-lg-0">
+                <?php if (!empty($_SESSION['user_id'])): ?>
+                    <div class="user-circle" id="userCircle" title="Личный кабинет">МО</div>
+                <?php else: ?>
+                    <button class="login-btn" id="loginBtn">Войти</button>
+                <?php endif; ?>
+            </div>
         </div>
-        <span class="system-name">Информационная система сбора данных</span>
     </div>
-    <nav>
-        <div class="nav-links">
-            <a href="#about">Главная</a>
-            <a href="#contacts">Контакты</a>
-            <a href="#feedback-form">Обратная связь</a>
-            <a href="get_table.php">Заполнить форму</a>
-        </div>
-
-        <?php if (!empty($_SESSION['user_id'])): ?>
-            <!-- Кружок вместо кнопки Войти -->
-            <div class="user-circle" id="userCircle" title="Личный кабинет">МО</div>
-        <?php else: ?>
-            <!-- Кнопка Войти для неавторизованных -->
-            <button class="login-btn" id="loginBtn">Войти</button>
-        <?php endif; ?>
-    </nav>
-</header>
-<main>
+</nav>
+<main class="container-fluid px-4 px-md-5">
     <section id="about">
         <h2>Об учреждении</h2>
         <p class="main-text">
@@ -72,14 +76,15 @@ include "db.php";
     <section id="feedback-form">
         <h2>Оставить заявку</h2>
         <form id="feedbackForm" method="POST">
-            <label for="full-name">ФИО:</label>
-            <input type="text" id="full-name" name="full-name" required>
+            <?= Csrf::input() ?>
+            <label class="form-label" for="full-name">ФИО:</label>
+            <input class="form-control" type="text" id="full-name" name="full-name" required>
 
-            <label for="phone">Номер телефона:</label>
-            <input type="tel" id="phone" name="phone" pattern="\+7\d{10}" placeholder="+7XXXXXXXXXX" required>
+            <label class="form-label" for="phone">Номер телефона:</label>
+            <input class="form-control" type="tel" id="phone" name="phone" pattern="\+7\d{10}" placeholder="+7XXXXXXXXXX" required>
 
-            <label for="problem-description">Текст обращения:</label>
-            <textarea id="problem-description" name="problem-description" required></textarea>
+            <label class="form-label" for="problem-description">Текст обращения:</label>
+            <textarea class="form-control" id="problem-description" name="problem-description" required></textarea>
 
             <button type="submit">Оставить заявку</button>
         </form>
@@ -95,26 +100,27 @@ include "db.php";
 
 <!-- Модальное окно регистрации/авторизации -->
 <div class="modal" id="authModal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width:460px; width:100%;">
         <span class="close" id="closeModal">&times;</span>
 
         <div class="form-wrapper" id="signUpForm">
             <form action="register.php" method="POST">
+                <?= Csrf::input() ?>
                 <h2>Регистрация</h2>
-                <label for="reg-fullname">ФИО:</label>
-                <input type="text" id="reg-fullname" name="fullname" required>
+                <label class="form-label" for="reg-fullname">ФИО:</label>
+                <input class="form-control" type="text" id="reg-fullname" name="fullname" required>
                 <small id="fio-error" style="color:red; display:none;">ФИО должно начинаться с заглавной буквы.</small>
 
-                <label for="reg-phone">Номер телефона:</label>
-                <input type="tel" id="reg-phone" name="phone" required maxlength="12" placeholder="+7XXXXXXXXXX">
+                <label class="form-label" for="reg-phone">Номер телефона:</label>
+                <input class="form-control" type="tel" id="reg-phone" name="phone" required maxlength="12" placeholder="+7XXXXXXXXXX">
                 <small id="phone-error" style="color:red; display:none;">Телефон должен начинаться с +7 и содержать 11 цифр.</small>
 
 
-                <label for="reg-email">Эл. почта:</label>
-                <input type="email" id="reg-email" name="email" required>
+                <label class="form-label" for="reg-email">Эл. почта:</label>
+                <input class="form-control" type="email" id="reg-email" name="email" required>
 
-                <label for="reg-municipality">Муниципальное образование:</label>
-                <select id="reg-municipality" name="municipality_id" required>
+                <label class="form-label" for="reg-municipality">Муниципальное образование:</label>
+                <select class="form-select" id="reg-municipality" name="municipality_id" required>
                     <option value="">Выберите МО</option>
                     <?php
                     $result = pg_query($conn, "SELECT municipality_id, municipality_name FROM municipalities ORDER BY municipality_name");
@@ -129,11 +135,11 @@ include "db.php";
                     ?>
                 </select>
 
-                <label for="reg-username">Логин:</label>
-                <input type="text" id="reg-username" name="username" required>
+                <label class="form-label" for="reg-username">Логин:</label>
+                <input class="form-control" type="text" id="reg-username" name="username" required>
 
-                <label for="reg-password">Пароль:</label>
-                <input type="password" id="reg-password" name="password" required>
+                <label class="form-label" for="reg-password">Пароль:</label>
+                <input class="form-control" type="password" id="reg-password" name="password" required>
 
                 <button type="submit">Зарегистрироваться</button>
                 <div class="signUp-link">
@@ -144,12 +150,13 @@ include "db.php";
 
         <div class="form-wrapper" id="signInForm" style="display:none;">
             <form action="login.php" method="POST">
+                <?= Csrf::input() ?>
                 <h2>Авторизация</h2>
-                <label for="login-username">Логин:</label>
-                <input type="text" id="login-username" name="username" required>
+                <label class="form-label" for="login-username">Логин:</label>
+                <input class="form-control" type="text" id="login-username" name="username" required>
 
-                <label for="login-password">Пароль:</label>
-                <input type="password" id="login-password" name="password" required>
+                <label class="form-label" for="login-password">Пароль:</label>
+                <input class="form-control" type="password" id="login-password" name="password" required>
 
                 <button type="submit">Войти</button>
                 <div class="signUp-link">
@@ -160,15 +167,18 @@ include "db.php";
     </div>
 </div>
 
-<!-- JS для обработки клика по кружку МО -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Скрытая форма выхода + JS -->
+<form id="logoutForm" method="POST" action="logout.php" style="display:none;">
+    <?= Csrf::input() ?>
+</form>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const userCircle = document.getElementById('userCircle');
     if (userCircle) {
         userCircle.addEventListener('click', function () {
-            const wantsLogout = confirm('Вы хотите выйти из личного кабинета?');
-            if (wantsLogout) {
-                window.location.href = 'logout.php';
+            if (confirm('Вы хотите выйти из личного кабинета?')) {
+                document.getElementById('logoutForm').submit();
             }
         });
     }

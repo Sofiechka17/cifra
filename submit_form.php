@@ -1,67 +1,43 @@
 <?php
+
 /**
- * Обработчик формы обратной связи 
- * Проводит серверную валидацию и сохраняет запись в feedback_requests.
+ * Контроллер формы обратной связи.
  */
-session_start();
-include "db.php";
+require_once __DIR__ . '/bootstrap.php';
 
-// Устанавливаем кодировку соединения с PostgreSQL в UTF-8
-pg_set_client_encoding($conn, "UTF8");
+header('Content-Type: application/json; charset=utf-8');
 
-header('Content-Type: application/json');
-
-if ($_SERVER["REQUEST_METHOD"] !== "POST") {
-    echo json_encode(["success" => false, "errors" => ["Неверный метод запроса"]]);
+if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+    JsonResponse::error(405, 'Метод не поддерживается.');
     exit;
 }
 
-// Получаем и очищаем данные из формы
-$fullName = trim($_POST["full-name"] ?? '');
-$phone = trim($_POST["phone"] ?? '');
-$problem = trim($_POST["problem-description"] ?? '');
+Csrf::verifyOrFail();
 
-// Массив для ошибок валидации
+$fullName = trim($_POST['full-name'] ?? '');
+$phone = trim($_POST['phone'] ?? '');
+$problem = trim($_POST['problem-description'] ?? '');
+
 $errors = [];
 
-// Проверка ФИО
-if (!preg_match("/^[А-ЯЁ][а-яё]+(\s[А-ЯЁ][а-яё]+)*$/u", $fullName)) {
-    $errors[] = "ФИО должно содержать только буквы и начинаться с заглавной буквы";
+if (!preg_match('/^[А-ЯЁ][а-яё]+(\s[А-ЯЁ][а-яё]+)*$/u', $fullName)) {
+    $errors[] = 'ФИО должно содержать только буквы и начинаться с заглавной буквы.';
+}
+if (!preg_match('/^\+7\d{10}$/', $phone)) {
+    $errors[] = 'Телефон должен начинаться с +7 и содержать 11 цифр.';
+}
+if ($problem === '') {
+    $errors[] = 'Текст обращения не может быть пустым.';
 }
 
-// Проверка телефона
-if (!preg_match("/^\+7\d{10}$/", $phone)) {
-    $errors[] = "Телефон должен начинаться с +7 и содержать 11 цифр";
-}
-
-// Проверка текста обращения
-if (empty($problem)) {
-    $errors[] = "Текст обращения не может быть пустым";
-}
-
-// Если есть ошибки, возвращаем их
 if (!empty($errors)) {
-    echo json_encode(["success" => false, "errors" => $errors]);
+    http_response_code(400);
+    echo json_encode(['success' => false, 'errors' => $errors], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// ID пользователя (если авторизован)
-$userId = $_SESSION["user_id"] ?? null;
+$guard = new SessionGuard();
+$repo = new FeedbackRepository($conn);
+$repo->create($guard->userId(), $fullName, $phone, $problem);
 
-// Запрос на вставку данных
-$query = "
-    INSERT INTO cit_schema.feedback_requests 
-        (user_id, full_name_feedback, phone_feedback, problem_description_feedback) 
-    VALUES ($1, $2, $3, $4)
-";
-
-$result = pg_query_params($conn, $query, [$userId, $fullName, $phone, $problem]);
-
-if ($result) {
-    echo json_encode(["success" => true, "message" => "Заявка успешно отправлена"]);
-} else {
-    echo json_encode([
-        "success" => false, 
-        "errors" => ["Ошибка при сохранении: " . pg_last_error($conn)]
-    ]);
-}
+JsonResponse::success('Заявка успешно отправлена.');
