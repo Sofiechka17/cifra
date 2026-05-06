@@ -29,10 +29,10 @@ final class FeedbackExcelExporter
 
         $rowNum = 2;
         foreach ($rows as $row) {
-            $sheet->setCellValue('A' . $rowNum, ExcelFormulaGuard::sanitize($row['feedback_id']));
-            $sheet->setCellValue('B' . $rowNum, ExcelFormulaGuard::sanitize($row['full_name_feedback']));
-            $sheet->setCellValue('C' . $rowNum, ExcelFormulaGuard::sanitize($row['phone_feedback']));
-            $sheet->setCellValue('D' . $rowNum, ExcelFormulaGuard::sanitize($row['problem_description_feedback']));
+            $sheet->setCellValue('A' . $rowNum, $row['feedback_id']);
+            $sheet->setCellValue('B' . $rowNum, $row['full_name_feedback']);
+            $sheet->setCellValue('C' . $rowNum, $row['phone_feedback']);
+            $sheet->setCellValue('D' . $rowNum, $row['problem_description_feedback']);
             $rowNum++;
         }
 

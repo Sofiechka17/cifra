@@ -66,7 +66,7 @@ final class FilledDataExcelExporter
         $lastCol = Coordinate::stringFromColumnIndex($columnsCount);
 
         $sheet->mergeCells($firstCol . '1:' . $lastCol . '1');
-        $sheet->setCellValue($firstCol . '1', ExcelFormulaGuard::sanitize($template->getName()));
+        $sheet->setCellValue($firstCol . '1', $template->getName());
         $sheet->getStyle($firstCol . '1')->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)
             ->setVertical(Alignment::VERTICAL_CENTER)
@@ -76,7 +76,7 @@ final class FilledDataExcelExporter
         $sheet->mergeCells($firstCol . '2:' . $lastCol . '2');
         $sheet->setCellValue(
             $firstCol . '2',
-            ExcelFormulaGuard::sanitize("МО: {$row['municipality_name']}   Дата: {$row['filled_date']}")
+            "МО: {$row['municipality_name']}   Дата: {$row['filled_date']}"
         );
         $sheet->getStyle($firstCol . '2')->getAlignment()
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)
@@ -85,7 +85,7 @@ final class FilledDataExcelExporter
         $headerRow = 4;
         foreach ($headers as $index => $h) {
             $colLetter = Coordinate::stringFromColumnIndex($index + 1);
-            $sheet->setCellValue($colLetter . $headerRow, ExcelFormulaGuard::sanitize($h['name']));
+            $sheet->setCellValue($colLetter . $headerRow, $h['name']);
         }
 
         $dataStartRow = $headerRow + 1;
@@ -106,13 +106,13 @@ final class FilledDataExcelExporter
             if ($rowType === 'comment') {
                 $comment = $userRow['Комментарий'] ?? ($cellsMeta['Комментарий'] ?? '');
                 $sheet->mergeCells($firstCol . $currentRow . ':' . $lastCol . $currentRow);
-                $sheet->setCellValue($firstCol . $currentRow, ExcelFormulaGuard::sanitize($comment));
+                $sheet->setCellValue($firstCol . $currentRow, $comment);
             } else {
                 foreach ($headers as $index => $h) {
                     $colLetter = Coordinate::stringFromColumnIndex($index + 1);
                     $name = $h['name'];
                     $value = $userRow[$name] ?? ($cellsMeta[$name] ?? '');
-                    $sheet->setCellValue($colLetter . $currentRow, ExcelFormulaGuard::sanitize($value));
+                    $sheet->setCellValue($colLetter . $currentRow, $value);
                 }
             }
             $currentRow++;

@@ -91,8 +91,6 @@ class ComposerStaticInit62e10e6c8df9afc192311b196c75bb33
         'Composer\\Pcre\\ReplaceResult' => __DIR__ . '/..' . '/composer/pcre/src/ReplaceResult.php',
         'Composer\\Pcre\\UnexpectedNullMatchException' => __DIR__ . '/..' . '/composer/pcre/src/UnexpectedNullMatchException.php',
         'Csrf' => __DIR__ . '/../..' . '/core/Auth/Csrf.php',
-        'ErrorHandler' => __DIR__ . '/../..' . '/core/Http/ErrorHandler.php',
-        'ExcelFormulaGuard' => __DIR__ . '/../..' . '/core/Export/ExcelFormulaGuard.php',
         'FeedbackExcelExporter' => __DIR__ . '/../..' . '/core/Export/FeedbackExcelExporter.php',
         'FeedbackRepository' => __DIR__ . '/../..' . '/core/Repository/FeedbackRepository.php',
         'FilledDataExcelExporter' => __DIR__ . '/../..' . '/core/Export/FilledDataExcelExporter.php',

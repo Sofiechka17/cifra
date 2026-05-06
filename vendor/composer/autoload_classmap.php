@@ -31,8 +31,6 @@ return array(
     'Composer\\Pcre\\ReplaceResult' => $vendorDir . '/composer/pcre/src/ReplaceResult.php',
     'Composer\\Pcre\\UnexpectedNullMatchException' => $vendorDir . '/composer/pcre/src/UnexpectedNullMatchException.php',
     'Csrf' => $baseDir . '/core/Auth/Csrf.php',
-    'ErrorHandler' => $baseDir . '/core/Http/ErrorHandler.php',
-    'ExcelFormulaGuard' => $baseDir . '/core/Export/ExcelFormulaGuard.php',
     'FeedbackExcelExporter' => $baseDir . '/core/Export/FeedbackExcelExporter.php',
     'FeedbackRepository' => $baseDir . '/core/Repository/FeedbackRepository.php',
     'FilledDataExcelExporter' => $baseDir . '/core/Export/FilledDataExcelExporter.php',

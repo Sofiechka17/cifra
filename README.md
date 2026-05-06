@@ -35,12 +35,12 @@ docker compose up -d --build
 ```mermaid
 graph TB
     Browser["Browser"] -->|"HTTP + CSRF"| Entry["Thin PHP Controllers (root/)"]
-    Entry --> Bootstrap["bootstrap.php — autoload, session, ErrorHandler"]
+    Entry --> Bootstrap["bootstrap.php — autoload, session"]
     Entry --> Auth["core/Auth/ — Csrf, SessionGuard"]
-    Entry --> Http["core/Http/ — JsonResponse, ErrorHandler"]
+    Entry --> Http["core/Http/ — JsonResponse"]
     Entry --> Repo["core/Repository/ — User, Feedback, AdminView"]
     Entry --> Tmpl["core/Template/ — Service, State, Entity"]
-    Entry --> Exp["core/Export/ — Exporters, FormulaGuard"]
+    Entry --> Exp["core/Export/ — Exporters"]
     Repo --> DB[("PostgreSQL<br/>cit_schema")]
     Tmpl --> DB
     Exp --> DB
@@ -59,10 +59,10 @@ graph TB
 ├── docker/initdb/               — сиды БД
 ├── core/
 │   ├── Auth/                    — Csrf, SessionGuard
-│   ├── Http/                    — JsonResponse, ErrorHandler
+│   ├── Http/                    — JsonResponse
 │   ├── Repository/              — User, Feedback, AdminView
 │   ├── Template/                — Template (Entity), TemplateService (Facade), TemplateState (State)
-│   └── Export/                  — ExcelFormulaGuard, FilledDataExcelExporter, FeedbackExcelExporter
+│   └── Export/                  — FilledDataExcelExporter, FeedbackExcelExporter
 ├── login.php, register.php, logout.php,
 ├── save_table.php, save_template.php,
 ├── export_excel.php, export_feedback_excel.php,
@@ -103,10 +103,8 @@ Init-скрипты лежат в [`docker/initdb/`](docker/initdb) и выпо�
 - **Session fixation** — `session_regenerate_id(true)` на логине
 - **Cookie flags** — `HttpOnly`, `SameSite=Lax` (для прода добавить `Secure=true`)
 - **Generic auth errors** — одинаковое сообщение при неверном логине и пароле (не даёт enumerate)
-- **Generic server errors** — ошибки БД и исключения пишутся в `error_log`, клиенту уходит generic
 - **SQL injection** — везде `pg_query_params` с плейсхолдерами
 - **XSS** — `htmlspecialchars` + `JSON_HEX_TAG` на выводе, `nl2br` только после экранирования
-- **Excel formula injection** — `ExcelFormulaGuard::sanitize()` перед `setCellValue`
 - **Public endpoints** — `get_municipalities.php` требует авторизации
 
 ### Зона роста (не входит в scope диплома)
