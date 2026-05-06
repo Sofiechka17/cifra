@@ -34,16 +34,13 @@ docker compose up -d --build
 
 ```mermaid
 graph TB
-    Browser["Browser"] -->|"HTTP + CSRF"| Entry["Thin PHP Controllers (root/)"]
-    Entry --> Bootstrap["bootstrap.php — autoload, session"]
-    Entry --> Auth["core/Auth/ — Csrf, SessionGuard"]
-    Entry --> Http["core/Http/ — JsonResponse"]
-    Entry --> Repo["core/Repository/ — User, Feedback, AdminView"]
-    Entry --> Tmpl["core/Template/ — Service, State, Entity"]
-    Entry --> Exp["core/Export/ — Exporters"]
-    Repo --> DB[("PostgreSQL<br/>cit_schema")]
+    Browser["Browser"] -->|"HTTP + CSRF"| Entry["PHP Pages (root/)"]
+    Entry --> Bootstrap["bootstrap.php — autoload, session, db.php"]
+    Entry --> Auth["auth.php — require_auth / require_admin / require_minec"]
+    Entry --> Csrf["core/Auth/Csrf.php — токен CSRF"]
+    Entry --> Tmpl["core/Template/ — Service (Facade), State, Entity"]
+    Entry --> DB[("PostgreSQL<br/>cit_schema")]
     Tmpl --> DB
-    Exp --> DB
 ```
 
 ### Структура репозитория
@@ -58,11 +55,8 @@ graph TB
 ├── Dockerfile
 ├── docker/initdb/               — сиды БД
 ├── core/
-│   ├── Auth/                    — Csrf, SessionGuard
-│   ├── Http/                    — JsonResponse
-│   ├── Repository/              — User, Feedback, AdminView
-│   ├── Template/                — Template (Entity), TemplateService (Facade), TemplateState (State)
-│   └── Export/                  — FilledDataExcelExporter, FeedbackExcelExporter
+│   ├── Auth/                    — Csrf
+│   └── Template/                — Template (Entity), TemplateService (Facade), TemplateState (State)
 ├── login.php, register.php, logout.php,
 ├── save_table.php, save_template.php,
 ├── export_excel.php, export_feedback_excel.php,
@@ -80,8 +74,6 @@ graph TB
 | **Facade** | [`core/Template/TemplateService.php`](core/Template/TemplateService.php) — единая точка доступа ко всем операциям с шаблонами и заполненными данными |
 | **State** | [`core/Template/TemplateState.php`](core/Template/TemplateState.php) — Active/Inactive/NoTemplate описывают поведение шаблона |
 | **Null Object** | `Template::notFound()` в [`core/Template/Template.php`](core/Template/Template.php) — псевдо-шаблон на случай отсутствия |
-| **Repository** | [`core/Repository/`](core/Repository) — инкапсуляция SQL-доступа (User, Feedback, AdminView) |
-| **Thin Controller** | Любой файл в корне (`login.php`, `save_template.php` и т.д.) — только wiring, вся логика в `core/` |
 
 ## База данных
 

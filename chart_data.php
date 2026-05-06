@@ -1,16 +1,21 @@
 <?php
-
+/**
+ * JSON-данные одной заполненной таблицы для построения графика.
+ */
 require_once __DIR__ . '/bootstrap.php';
 
-$guard = new SessionGuard();
-if (!$guard->isAdmin() && !$guard->isMinec()) {
-    JsonResponse::error(403, 'Доступ запрещён');
+header('Content-Type: application/json; charset=utf-8');
+
+if (!is_admin() && !is_minec()) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Доступ запрещён'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 $filledId = (int)($_GET['filled_id'] ?? 0);
 if ($filledId <= 0) {
-    JsonResponse::error(400, 'Не передан filled_id');
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Не передан filled_id'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -25,15 +30,17 @@ $sql = "
 ";
 $res = pg_query_params($conn, $sql, [$filledId]);
 if (!$res || pg_num_rows($res) === 0) {
-    JsonResponse::error(404, 'Данные не найдены');
+    http_response_code(404);
+    echo json_encode(['success' => false, 'message' => 'Данные не найдены'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 $row = pg_fetch_assoc($res);
-JsonResponse::success('', [
+echo json_encode([
+    'success' => true,
     'template_name' => $row['template_name'],
     'municipality_name' => $row['municipality_name'],
     'filled_date' => $row['filled_date'],
     'headers' => json_decode($row['template_headers'] ?? '[]', true) ?? [],
     'filled_data' => json_decode($row['filled_data'] ?? '[]', true) ?? [],
-]);
+], JSON_UNESCAPED_UNICODE);

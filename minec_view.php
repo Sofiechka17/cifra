@@ -8,11 +8,29 @@
 
 require_once __DIR__ . '/bootstrap.php';
 
-(new SessionGuard())->requireMinec();
+require_minec();
 
-$repo = new AdminViewRepository($conn);
-$filledRowsForJs = $repo->getFilledTables();
-$municipalitiesList = $repo->getMunicipalitiesList();
+$filledRowsForJs = [];
+$res = pg_query($conn, "
+    SELECT f.filled_data_id, f.template_id, f.filled_data,
+           u.user_full_name,
+           m.municipality_id, m.municipality_name,
+           t.template_name, f.filled_date
+      FROM cit_schema.filled_data f
+      JOIN cit_schema.users u ON f.user_id = u.user_id
+      JOIN cit_schema.municipalities m ON f.municipality_id = m.municipality_id
+      JOIN cit_schema.table_templates t ON t.template_id = f.template_id
+     ORDER BY f.filled_date DESC
+");
+if ($res) {
+    while ($r = pg_fetch_assoc($res)) { $filledRowsForJs[] = $r; }
+}
+
+$municipalitiesList = [];
+$res = pg_query($conn, "SELECT municipality_id, municipality_name FROM cit_schema.municipalities ORDER BY municipality_name");
+if ($res) {
+    while ($r = pg_fetch_assoc($res)) { $municipalitiesList[] = $r; }
+}
 
 $loadedTemplateArray = null;
 if (!empty($_GET['template_id'])) {

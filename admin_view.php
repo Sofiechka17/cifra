@@ -10,16 +10,47 @@
 
 require_once __DIR__ . '/bootstrap.php';
 
-(new SessionGuard())->requireAdmin();
+require_admin();
 
 $service = new TemplateService($conn);
-$repo = new AdminViewRepository($conn);
-$feedbackRepo = new FeedbackRepository($conn);
 
-$filledRowsForJs = $repo->getFilledTables();
-$templatesList = $repo->getTemplatesList();
-$municipalitiesList = $repo->getMunicipalitiesList();
-$feedbackRows = $feedbackRepo->listAll();
+$filledRowsForJs = [];
+$res = pg_query($conn, "
+    SELECT f.filled_data_id, f.template_id, f.filled_data,
+           u.user_full_name,
+           m.municipality_id, m.municipality_name,
+           t.template_name, f.filled_date
+      FROM cit_schema.filled_data f
+      JOIN cit_schema.users u ON f.user_id = u.user_id
+      JOIN cit_schema.municipalities m ON f.municipality_id = m.municipality_id
+      JOIN cit_schema.table_templates t ON t.template_id = f.template_id
+     ORDER BY f.filled_date DESC
+");
+if ($res) {
+    while ($r = pg_fetch_assoc($res)) { $filledRowsForJs[] = $r; }
+}
+
+$templatesList = [];
+$res = pg_query($conn, "SELECT template_id, template_name, is_active FROM cit_schema.table_templates ORDER BY template_id DESC");
+if ($res) {
+    while ($r = pg_fetch_assoc($res)) { $templatesList[] = $r; }
+}
+
+$municipalitiesList = [];
+$res = pg_query($conn, "SELECT municipality_id, municipality_name FROM cit_schema.municipalities ORDER BY municipality_name");
+if ($res) {
+    while ($r = pg_fetch_assoc($res)) { $municipalitiesList[] = $r; }
+}
+
+$feedbackRows = [];
+$res = pg_query($conn, "
+    SELECT feedback_id, full_name_feedback, phone_feedback, problem_description_feedback
+      FROM cit_schema.feedback_requests
+     ORDER BY feedback_id DESC
+");
+if ($res) {
+    while ($r = pg_fetch_assoc($res)) { $feedbackRows[] = $r; }
+}
 
 $loadedTemplateArray = null;
 if (!empty($_GET['template_id'])) {

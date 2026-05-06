@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Контроллер формы обратной связи.
  */
@@ -8,7 +7,8 @@ require_once __DIR__ . '/bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-    JsonResponse::error(405, 'Метод не поддерживается.');
+    http_response_code(405);
+    echo json_encode(['success' => false, 'message' => 'Метод не поддерживается.'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -36,8 +36,18 @@ if (!empty($errors)) {
     exit;
 }
 
-$guard = new SessionGuard();
-$repo = new FeedbackRepository($conn);
-$repo->create($guard->userId(), $fullName, $phone, $problem);
+$userId = current_user_id();
+$res = pg_query_params(
+    $conn,
+    "INSERT INTO cit_schema.feedback_requests (user_id, full_name_feedback, phone_feedback, problem_description_feedback)
+     VALUES ($1, $2, $3, $4)",
+    [$userId, $fullName, $phone, $problem]
+);
 
-JsonResponse::success('Заявка успешно отправлена.');
+if (!$res) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Не удалось сохранить заявку.'], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+echo json_encode(['success' => true, 'message' => 'Заявка успешно отправлена.'], JSON_UNESCAPED_UNICODE);
