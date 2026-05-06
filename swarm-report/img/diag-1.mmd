@@ -1,0 +1,38 @@
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
+%%{init: {'flowchart': {'curve': 'linear'}}}%%
+flowchart LR
+    User([Пользователь МО])
+    Admin([Администратор])
+    Minec([Минэк])
+
+    Index[Главная страница]
+    Register[Регистрация]
+    Login[Вход]
+    Auth[Проверка прав]
+    GetTable[Форма таблицы]
+    SaveTable[Сохранение таблицы]
+    AdminView[Конструктор шаблонов]
+    SaveTpl[Сохранение шаблона]
+    MinecView[Сводный просмотр]
+    ChartData[Данные для графиков]
+    Export[Выгрузка в Excel]
+    Feedback[Обратная связь]
+
+    TplSvc[[Сервис шаблонов]]
+    DB[(База данных)]
+
+    User -- "регистрируется" --> Index
+    Index --> Register --> DB
+    User -- "входит" --> Login --> DB
+    Login -- "открывает сессию" --> Auth
+
+    Auth -- "пускает пользователя" --> GetTable
+    GetTable -- "активный шаблон" --> TplSvc --> DB
+    User -- "заполняет форму" --> GetTable --> SaveTable --> TplSvc
+
+    Auth -- "пускает админа" --> AdminView --> SaveTpl --> TplSvc
+    Auth -- "пускает минэка" --> MinecView --> DB
+    MinecView --> ChartData --> DB
+    Minec -- "выгрузка" --> Export --> DB
+
+    User -- "обращение" --> Feedback --> DB

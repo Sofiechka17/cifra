@@ -1,0 +1,104 @@
+create schema cit_schema;
+
+CREATE TABLE cit_schema.municipalities (
+                                           municipality_id SERIAL PRIMARY KEY,
+                                           municipality_name VARCHAR(255) NOT NULL UNIQUE,
+                                           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+ALTER TABLE cit_schema.users ADD COLUMN is_admin BOOLEAN DEFAULT FALSE;
+
+
+
+CREATE TABLE cit_schema.users (
+                                  user_id SERIAL PRIMARY KEY,
+                                  user_full_name VARCHAR(255) NOT NULL,
+                                  user_login VARCHAR(100) NOT NULL UNIQUE,
+                                  user_password VARCHAR(255) NOT NULL,
+                                  user_email VARCHAR(255) NOT NULL UNIQUE,
+                                  user_phone VARCHAR(20) NOT NULL,
+                                  municipality_id INTEGER REFERENCES cit_schema.municipalities(municipality_id),
+                                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+UPDATE cit_schema.users
+SET user_password = '1234'
+WHERE user_login = 'Админ';
+
+ALTER TABLE cit_schema.users
+    ADD COLUMN role VARCHAR(20) DEFAULT 'user';
+
+UPDATE cit_schema.users
+SET role = 'admin'
+WHERE is_admin = TRUE;
+
+UPDATE cit_schema.users
+SET role = 'minec'
+WHERE user_login = 'Minek';
+
+SELECT user_login, is_admin, role
+FROM cit_schema.users;
+
+ALTER TABLE cit_schema.users DROP COLUMN is_admin;
+-- Создание таблицы шаблонов таблиц
+CREATE TABLE cit_schema.table_templates (
+                                            template_id SERIAL PRIMARY KEY,
+                                            template_name VARCHAR(255) NOT NULL,
+                                            template_headers JSONB NOT NULL,
+                                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Доработка таблицы шаблонов для конструктора
+ALTER TABLE cit_schema.table_templates
+    ALTER COLUMN template_headers SET DEFAULT '[]'::jsonb;
+
+ALTER TABLE cit_schema.table_templates
+    ADD COLUMN IF NOT EXISTS template_structure JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+ALTER TABLE cit_schema.table_templates
+    ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT FALSE;
+
+
+-- Создание таблицы заполненных данных
+CREATE TABLE cit_schema.filled_data (
+                                        filled_data_id SERIAL PRIMARY KEY,
+                                        user_id INTEGER REFERENCES cit_schema.users(user_id),
+                                        template_id INTEGER REFERENCES cit_schema.table_templates(template_id),
+                                        municipality_id INTEGER REFERENCES cit_schema.municipalities(municipality_id),
+                                        filled_data JSONB NOT NULL,
+                                        filled_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Создание таблицы заявок (обратная связь)
+CREATE TABLE cit_schema.feedback_requests (
+                                              feedback_id SERIAL PRIMARY KEY,
+                                              user_id INTEGER REFERENCES cit_schema.users(user_id),
+                                              submission_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                                              problem_description TEXT NOT NULL
+);
+
+-- Заполнение тестовыми данными муниципальных образований
+INSERT INTO cit_schema.municipalities (municipality_name) VALUES
+                                                              ('Гайский городской округ'),
+                                                              ('Оренбург'),
+                                                              ('Акбулакский район'),
+                                                              ('Медногорск')
+                                                               ON CONFLICT (municipality_name) DO NOTHING;
+
+-- Создание шаблона таблицы
+INSERT INTO cit_schema.table_templates (template_name, template_headers) VALUES (
+                                                                                    'Прогноз социального развития 2026-2028',
+                                                                                    '[
+                                                                                      {"name": "Показатели", "type": "text", "readonly": true},
+                                                                                      {"name": "Единица измерения", "type": "text", "readonly": true},
+                                                                                      {"name": "2022", "type": "number", "readonly": false},
+                                                                                      {"name": "2023", "type": "number", "readonly": false},
+                                                                                      {"name": "2024", "type": "number", "readonly": false},
+                                                                                      {"name": "2025", "type": "number", "readonly": false},
+                                                                                      {"name": "2026_консервативный", "type": "number", "readonly": false},
+                                                                                      {"name": "2026_базовый", "type": "number", "readonly": false},
+                                                                                      {"name": "2027_консервативный", "type": "number", "readonly": false},
+                                                                                      {"name": "2027_базовый", "type": "number", "readonly": false},
+                                                                                      {"name": "2028_консервативный", "type": "number", "readonly": false},
+                                                                                      {"name": "2028_базовый", "type": "number", "readonly": false}
+                                                                                    ]'
+                                                                                );
