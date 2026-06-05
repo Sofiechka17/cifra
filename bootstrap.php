@@ -22,3 +22,4 @@ require __DIR__ . '/auth.php';
 ensure_session_started();
 
 require __DIR__ . '/db.php';
+

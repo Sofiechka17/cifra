@@ -54,8 +54,8 @@ if ($check && pg_num_rows($check) > 0) {
 
 $insert = pg_query_params(
     $conn,
-    "INSERT INTO cit_schema.users (user_full_name, user_login, user_password, user_email, user_phone, municipality_id, is_admin)
-     VALUES ($1, $2, $3, $4, $5, $6, false)",
+    "INSERT INTO cit_schema.users (user_full_name, user_login, user_password, user_email, user_phone, municipality_id)
+     VALUES ($1, $2, $3, $4, $5, $6)",
     [$fullName, $login, password_hash($password, PASSWORD_BCRYPT), $email, $phone, $municipalityId]
 );
 

@@ -57,7 +57,7 @@ class MainPageApp {
       signInForm.style.display = mode === "login" ? "block" : "none";
     };
 
-    if (loginBtn) loginBtn.addEventListener("click", () => openModal("register"));
+    if (loginBtn) loginBtn.addEventListener("click", () => openModal("login"));
     if (closeModal) closeModal.addEventListener("click", () => (modal.style.display = "none"));
 
     window.addEventListener("click", (e) => {
